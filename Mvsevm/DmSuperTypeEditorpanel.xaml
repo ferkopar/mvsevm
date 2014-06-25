@@ -14,6 +14,10 @@
             <RowDefinition></RowDefinition>
             <RowDefinition></RowDefinition>
             <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition></ColumnDefinition>
@@ -31,6 +35,29 @@
 
         <TextBox    Grid.Row="3" Grid.Column="1" TextWrapping="Wrap" Text="{Binding DESCRIPTION}" />
         <TextBlock  Grid.Row="3" Grid.Column="0"  Text="Leírás"  HorizontalAlignment="Left"  TextWrapping="Wrap" VerticalAlignment="Top"/>
+
+        <TextBox    Grid.Row="4" Grid.Column="1" TextWrapping="Wrap" Text="{Binding FROM_DATE}" />
+        <TextBlock  Grid.Row="4" Grid.Column="0"  Text="Érvényesség kezdete"  HorizontalAlignment="Left"  TextWrapping="Wrap" VerticalAlignment="Top"/>
+
+        <TextBox    Grid.Row="5" Grid.Column="1" TextWrapping="Wrap" Text="{Binding TO_DATE}" />
+        <TextBlock  Grid.Row="5" Grid.Column="0"  Text="Érvényesség vége"  HorizontalAlignment="Left"  TextWrapping="Wrap" VerticalAlignment="Top"/>
+
+        <TextBox    Grid.Row="6" Grid.Column="1" TextWrapping="Wrap" Text="{Binding USER_COMMENT}" />
+        <TextBlock  Grid.Row="6" Grid.Column="0"  Text="Felhasználói megjegyzés"  HorizontalAlignment="Left"  TextWrapping="Wrap" VerticalAlignment="Top"/>
+
+        <TextBox    Grid.Row="7" Grid.Column="1" TextWrapping="Wrap" Text="{Binding CRU}" />
+        <TextBlock  Grid.Row="7" Grid.Column="0"  Text="Létrehozó felhasználó"  HorizontalAlignment="Left"  TextWrapping="Wrap" VerticalAlignment="Top"/>
+
+        <!-- <TextBox    Grid.Row="8" Grid.Column="1" TextWrapping="Wrap" Text="{Binding CRD}" /> -->
+        <TextBlock  Grid.Row="8" Grid.Column="0"  Text="Létrehozás ideje"  HorizontalAlignment="Left"  TextWrapping="Wrap" VerticalAlignment="Top"/>
+        <DatePicker  Grid.Row="8" Grid.Column="1" HorizontalAlignment="Left" DisplayDate="{Binding CRD}" VerticalAlignment="Top" Width="100" Height="39" />        
+        
+        <TextBox    Grid.Row="9" Grid.Column="1" TextWrapping="Wrap" Text="{Binding MDU}" /> 
+        <TextBlock  Grid.Row="9" Grid.Column="0"  Text="Módosító felhasználó"  HorizontalAlignment="Left"  TextWrapping="Wrap" VerticalAlignment="Top"/>
+        
+        <!-- <TextBox    Grid.Row="10" Grid.Column="1" TextWrapping="Wrap" Text="{Binding MDD}" /> -->
+        <TextBlock  Grid.Row="10" Grid.Column="0"  Text="Módosítás ideje"  HorizontalAlignment="Left"  TextWrapping="Wrap" VerticalAlignment="Top"/>
+        <DatePicker  Grid.Row="10" Grid.Column="1" HorizontalAlignment="Left" DisplayDate="{Binding MDD}" VerticalAlignment="Top" Width="100" Height="39" />
 
     </Grid>
 </UserControl>
