@@ -26,6 +26,7 @@ namespace Mvsevm
                 return editDmSuperType ?? (editDmSuperType = new RoutedUICommand("Típus karbantartás", "EditDmSuperType", typeof(MvsevmCommands)));
             }
         }
+
         /*
         private static RoutedUICommand showBooksList;
         public static ICommand ShowBooksList
