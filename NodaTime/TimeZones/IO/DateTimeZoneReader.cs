@@ -59,7 +59,7 @@ namespace NodaTime.TimeZones.IO
         /// Reads a base-128 varint value from the stream.
         /// </summary>
         /// <remarks>
-        /// The value must have been written by <see cref="DateTimeZoneWriter.WriteVarint" />, which
+        /// The value must have been written by DateTimeZoneWriter.WriteVarint, which
         /// documents the format.
         /// </remarks>
         /// <returns>The integer value from the stream.</returns>
@@ -128,18 +128,6 @@ namespace NodaTime.TimeZones.IO
         }
 
         /// <summary>
-        /// Reads a boolean value from the stream.
-        /// </summary>
-        /// <remarks>
-        /// The value must have been written by <see cref="DateTimeZoneWriter.WriteBoolean" />.
-        /// </remarks>
-        /// <returns>The boolean value.</returns>
-        internal bool ReadBoolean()
-        {
-            return ReadByte() == 0 ? false : true;
-        }
-
-        /// <summary>
         /// Reads a string to string dictionary value from the stream.
         /// </summary>
         /// <remarks>
@@ -182,7 +170,7 @@ namespace NodaTime.TimeZones.IO
                         case DateTimeZoneWriter.ZoneIntervalConstants.MarkerMaxValue:
                             return Instant.MaxValue;
                         case DateTimeZoneWriter.ZoneIntervalConstants.MarkerRaw:
-                            return new Instant(ReadInt64());
+                            return Instant.FromTicksSinceUnixEpoch(ReadInt64());
                         default: 
                             throw new InvalidNodaDataException("Unrecognised marker value: " + value);
                     }

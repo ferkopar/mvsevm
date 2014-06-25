@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
+using JetBrains.Annotations;
+using NodaTime.Annotations;
 using NodaTime.Fields;
 using NodaTime.Text;
 using NodaTime.Utility;
@@ -42,6 +44,7 @@ namespace NodaTime
 #if !PCL
     [Serializable]
 #endif
+    [Immutable]
     public sealed class Period : IEquatable<Period>
 #if !PCL
         , ISerializable
@@ -69,7 +72,7 @@ namespace NodaTime
         /// <summary>
         /// A period containing only zero-valued properties.
         /// </summary>
-        public static readonly Period Zero = new Period(new long[ValuesArraySize]);
+        public static readonly Period Zero = new Period(0, 0, 0, 0);
 
         /// <summary>
         /// Returns an equality comparer which compares periods by first normalizing them - so 24 hours is deemed equal to 1 day, and so on.
@@ -84,32 +87,38 @@ namespace NodaTime
         private readonly long seconds;
         private readonly long minutes;
         private readonly long hours;
-        private readonly long days;
-        private readonly long weeks;
-        private readonly long months;
-        private readonly long years;
+        private readonly int days;
+        private readonly int weeks;
+        private readonly int months;
+        private readonly int years;
 
         /// <summary>
-        /// Creates a new period from the given array.
+        /// Creates a period with the given date values.
         /// </summary>
-        /// <param name="values">Values for each field</param>
-        private Period(long[] values)
+        internal Period(int years, int months, int weeks, int days)
         {
-            years = values[YearIndex];
-            months = values[MonthIndex];
-            weeks = values[WeekIndex];
-            days = values[DayIndex];
-            hours = values[HourIndex];
-            minutes = values[MinuteIndex];
-            seconds = values[SecondIndex];
-            milliseconds = values[MillisecondIndex];
-            ticks = values[TickIndex];
+            this.years = years;
+            this.months = months;
+            this.weeks = weeks;
+            this.days = days;
+        }
+
+        /// <summary>
+        /// Creates a period with the given time values.
+        /// </summary>
+        internal Period(long hours, long minutes, long seconds, long milliseconds, long ticks)
+        {
+            this.hours = hours;
+            this.minutes = minutes;
+            this.seconds = seconds;
+            this.milliseconds = milliseconds;
+            this.ticks = ticks;
         }
 
         /// <summary>
         /// Creates a new period from the given values.
         /// </summary>
-        internal Period(long years, long months, long weeks, long days, long hours, long minutes, long seconds,
+        internal Period(int years, int months, int weeks, int days, long hours, long minutes, long seconds,
             long milliseconds, long ticks)
         {
             this.years = years;
@@ -123,44 +132,16 @@ namespace NodaTime
             this.ticks = ticks;
         }
 
-        /// <summary>
-        /// Creates a new period with the given single value.
-        /// </summary>
-        private Period(PeriodUnits periodUnit, long value)
-        {
-            switch (periodUnit)
-            {
-                case PeriodUnits.Years: years = value; break;
-                case PeriodUnits.Months: months = value; break;
-                case PeriodUnits.Weeks: weeks = value; break;
-                case PeriodUnits.Days: days = value; break;
-                case PeriodUnits.Hours: hours = value; break;
-                case PeriodUnits.Minutes: minutes = value; break;
-                case PeriodUnits.Seconds: seconds = value; break;
-                case PeriodUnits.Milliseconds: milliseconds = value; break;
-                case PeriodUnits.Ticks: ticks = value; break;
-                default: throw new ArgumentException("Unit must be singular", "periodUnit");
-            }
-        }
 
         /// <summary>
         /// Creates a period representing the specified number of years.
         /// </summary>
         /// <param name="years">The number of years in the new period</param>
         /// <returns>A period consisting of the given number of years.</returns>
-        public static Period FromYears(long years)
+        [NotNull]
+        public static Period FromYears(int years)
         {
-            return new Period(PeriodUnits.Years, years);
-        }
-
-        /// <summary>
-        /// Creates a period representing the specified number of weeks.
-        /// </summary>
-        /// <param name="weeks">The number of weeks in the new period</param>
-        /// <returns>A period consisting of the given number of weeks.</returns>
-        public static Period FromWeeks(long weeks)
-        {
-            return new Period(PeriodUnits.Weeks, weeks);
+            return new Period(years, 0, 0, 0);
         }
 
         /// <summary>
@@ -168,9 +149,19 @@ namespace NodaTime
         /// </summary>
         /// <param name="months">The number of months in the new period</param>
         /// <returns>A period consisting of the given number of months.</returns>
-        public static Period FromMonths(long months)
+        public static Period FromMonths(int months)
         {
-            return new Period(PeriodUnits.Months, months);
+            return new Period(0, months, 0, 0);
+        }
+
+        /// <summary>
+        /// Creates a period representing the specified number of weeks.
+        /// </summary>
+        /// <param name="weeks">The number of weeks in the new period</param>
+        /// <returns>A period consisting of the given number of weeks.</returns>
+        public static Period FromWeeks(int weeks)
+        {
+            return new Period(0, 0, weeks, 0);
         }
 
         /// <summary>
@@ -178,9 +169,9 @@ namespace NodaTime
         /// </summary>
         /// <param name="days">The number of days in the new period</param>
         /// <returns>A period consisting of the given number of days.</returns>
-        public static Period FromDays(long days)
+        public static Period FromDays(int days)
         {
-            return new Period(PeriodUnits.Days, days);
+            return new Period(0, 0, 0, days);
         }
 
         /// <summary>
@@ -190,7 +181,7 @@ namespace NodaTime
         /// <returns>A period consisting of the given number of hours.</returns>
         public static Period FromHours(long hours)
         {
-            return new Period(PeriodUnits.Hours, hours);
+            return new Period(hours, 0L, 0L, 0L, 0L);
         }
 
         /// <summary>
@@ -200,7 +191,7 @@ namespace NodaTime
         /// <returns>A period consisting of the given number of minutes.</returns>
         public static Period FromMinutes(long minutes)
         {
-            return new Period(PeriodUnits.Minutes, minutes);
+            return new Period(0L, minutes, 0L, 0L, 0L);
         }
 
         /// <summary>
@@ -210,22 +201,8 @@ namespace NodaTime
         /// <returns>A period consisting of the given number of seconds.</returns>
         public static Period FromSeconds(long seconds)
         {
-            return new Period(PeriodUnits.Seconds, seconds);
+            return new Period(0L, 0L, seconds, 0L, 0L);
         }
-
-#if !PCL
-        /// <summary>
-        /// Creates a period representing the specified number of milliseconds.
-        /// </summary>
-        /// <remarks>This method is not available in the PCL version, as it was made obsolete in Noda Time 1.1.</remarks>
-        /// <param name="milliseconds">The number of milliseconds in the new period</param>
-        /// <returns>A period consisting of the given number of milliseconds.</returns>
-        [Obsolete("Use FromMilliseconds instead. This method's name was a typo, and it will be removed in a future release.")]
-        public static Period FromMillseconds(long milliseconds)
-        {
-            return FromMilliseconds(milliseconds);
-        }
-#endif
 
         /// <summary>
         /// Creates a period representing the specified number of milliseconds.
@@ -234,7 +211,7 @@ namespace NodaTime
         /// <returns>A period consisting of the given number of milliseconds.</returns>
         public static Period FromMilliseconds(long milliseconds)
         {
-            return new Period(PeriodUnits.Milliseconds, milliseconds);
+            return new Period(0L, 0L, 0L, milliseconds, 0L);
         }
 
         /// <summary>
@@ -244,7 +221,7 @@ namespace NodaTime
         /// <returns>A period consisting of the given number of ticks.</returns>
         public static Period FromTicks(long ticks)
         {
-            return new Period(PeriodUnits.Ticks, ticks);
+            return new Period(0L, 0L, 0L, 0L, ticks);
         }
 
         /// <summary>
@@ -258,9 +235,16 @@ namespace NodaTime
         {
             Preconditions.CheckNotNull(left, "left");
             Preconditions.CheckNotNull(right, "right");
-            long[] sum = left.ToArray();
-            right.AddValuesTo(sum);
-            return new Period(sum);
+            return new Period(
+                left.Years + right.Years,
+                left.Months + right.Months,
+                left.Weeks + right.Weeks,
+                left.Days + right.Days,
+                left.Hours + right.Hours,
+                left.Minutes + right.Minutes,
+                left.Seconds + right.Seconds,
+                left.Milliseconds + right.Milliseconds,
+                left.Ticks + right.Ticks);
         }
 
         /// <summary>
@@ -281,58 +265,6 @@ namespace NodaTime
         }
 
         /// <summary>
-        /// Returns the property values in this period as an array.
-        /// </summary>
-        private long[] ToArray()
-        {
-            long[] values = new long[ValuesArraySize];
-            values[YearIndex] = years;
-            values[MonthIndex] = months;
-            values[WeekIndex] = weeks;
-            values[DayIndex] = days;
-            values[HourIndex] = hours;
-            values[MinuteIndex] = minutes;
-            values[SecondIndex] = seconds;
-            values[MillisecondIndex] = milliseconds;
-            values[TickIndex] = ticks;
-            return values;
-        }
-
-        /// <summary>
-        /// Adds all the values in this period to the given array of values (which is assumed to be of the right
-        /// length).
-        /// </summary>
-        private void AddValuesTo(long[] values)
-        {
-            values[YearIndex] += years;
-            values[MonthIndex] += months;
-            values[WeekIndex] += weeks;
-            values[DayIndex] += days;
-            values[HourIndex] += hours;
-            values[MinuteIndex] += minutes;
-            values[SecondIndex] += seconds;
-            values[MillisecondIndex] += milliseconds;
-            values[TickIndex] += ticks;
-        }
-
-        /// <summary>
-        /// Subtracts all the values in this period from the given array of values (which is assumed to be of the right
-        /// length).
-        /// </summary>
-        private void SubtractValuesFrom(long[] values)
-        {
-            values[YearIndex] -= years;
-            values[MonthIndex] -= months;
-            values[WeekIndex] -= weeks;
-            values[DayIndex] -= days;
-            values[HourIndex] -= hours;
-            values[MinuteIndex] -= minutes;
-            values[SecondIndex] -= seconds;
-            values[MillisecondIndex] -= milliseconds;
-            values[TickIndex] -= ticks;
-        }
-
-        /// <summary>
         /// Subtracts one period from another, by simply subtracting each property value.
         /// </summary>
         /// <param name="minuend">The period to subtract the second operand from</param>
@@ -344,9 +276,16 @@ namespace NodaTime
         {
             Preconditions.CheckNotNull(minuend, "minuend");
             Preconditions.CheckNotNull(subtrahend, "subtrahend");
-            long[] sum = minuend.ToArray();
-            subtrahend.SubtractValuesFrom(sum);
-            return new Period(sum);
+            return new Period(
+                minuend.Years - subtrahend.Years,
+                minuend.Months - subtrahend.Months,
+                minuend.Weeks - subtrahend.Weeks,
+                minuend.Days - subtrahend.Days,
+                minuend.Hours - subtrahend.Hours,
+                minuend.Minutes - subtrahend.Minutes,
+                minuend.Seconds - subtrahend.Seconds,
+                minuend.Milliseconds - subtrahend.Milliseconds,
+                minuend.Ticks - subtrahend.Ticks);
         }
 
         /// <summary>
@@ -380,56 +319,112 @@ namespace NodaTime
                 return Zero;
             }
 
-            PeriodFieldSet fields = calendar.PeriodFields;
+            // Adjust for situations like "days between 5th January 10am and 7th Janary 5am" which should be one
+            // day, because if we actually reach 7th January with date fields, we've overshot.
+            // The date adjustment will always be valid, because it's just moving it towards start.
+            // We need this for all date-based period fields. We could potentially optimize by not doing this
+            // in cases where we've only got time fields...
+            LocalDate endDate = end.Date;
+            if (start < end)
+            {
+                if (start.TimeOfDay > end.TimeOfDay)
+                {
+                    endDate = endDate.PlusDays(-1);
+                }
+            }
+            else if (start > end && start.TimeOfDay < end.TimeOfDay)
+            {
+                endDate = endDate.PlusDays(1);
+            }
 
             // Optimization for single field
-            var singleField = GetSingleField(fields, units);
-            if (singleField != null)
+            switch (units)
             {
-                long value = singleField.Subtract(end.LocalInstant, start.LocalInstant);
-                return new Period(units, value);
+                case PeriodUnits.Years: return FromYears(DatePeriodFields.YearsField.Subtract(endDate, start.Date));
+                case PeriodUnits.Months: return FromMonths(DatePeriodFields.MonthsField.Subtract(endDate, start.Date));
+                case PeriodUnits.Weeks: return FromWeeks(DatePeriodFields.WeeksField.Subtract(endDate, start.Date));
+                case PeriodUnits.Days: return FromDays(DatePeriodFields.DaysField.Subtract(endDate, start.Date));
+                case PeriodUnits.Hours: return FromHours(GetTimeBetween(start, end, TimePeriodField.Hours));
+                case PeriodUnits.Minutes: return FromMinutes(GetTimeBetween(start, end, TimePeriodField.Minutes));
+                case PeriodUnits.Seconds: return FromSeconds(GetTimeBetween(start, end, TimePeriodField.Seconds));
+                case PeriodUnits.Milliseconds: return FromMilliseconds(GetTimeBetween(start, end, TimePeriodField.Milliseconds));
+                case PeriodUnits.Ticks: return FromTicks(GetTimeBetween(start, end, TimePeriodField.Ticks));
             }
 
             // Multiple fields
-            long[] values = new long[ValuesArraySize];
-
-            LocalInstant remaining = startLocalInstant;
-            int numericFields = (int) units;
-            for (int i = 0; i < ValuesArraySize; i++)
+            LocalDateTime remaining = start;
+            int years = 0, months = 0, weeks = 0, days = 0;
+            if ((units & PeriodUnits.AllDateUnits) != 0)
             {
-                if ((numericFields & (1 << i)) != 0)
-                {
-                    var field = GetFieldForIndex(fields, i);
-                    values[i] = field.Subtract(endLocalInstant, remaining);
-                    remaining = field.Add(remaining, values[i]);
-                }
+                LocalDate remainingDate = start.Date;
+                years = FieldBetween(units & PeriodUnits.Years, endDate, ref remainingDate, DatePeriodFields.YearsField);
+                months = FieldBetween(units & PeriodUnits.Months, endDate, ref remainingDate, DatePeriodFields.MonthsField);
+                weeks = FieldBetween(units & PeriodUnits.Weeks, endDate, ref remainingDate, DatePeriodFields.WeeksField);
+                days = FieldBetween(units & PeriodUnits.Days, endDate, ref remainingDate, DatePeriodFields.DaysField);
+                remaining = new LocalDateTime(remainingDate, start.TimeOfDay);
             }
-            return new Period(values);
+
+            long hours = 0, minutes = 0, seconds = 0, milliseconds = 0, ticks = 0;
+            if ((units & PeriodUnits.AllTimeUnits) != 0)
+            {
+                hours = FieldBetween(units & PeriodUnits.Hours, end, ref remaining, TimePeriodField.Hours);
+                minutes = FieldBetween(units & PeriodUnits.Minutes, end, ref remaining, TimePeriodField.Minutes);
+                seconds = FieldBetween(units & PeriodUnits.Seconds, end, ref remaining, TimePeriodField.Seconds);
+                milliseconds = FieldBetween(units & PeriodUnits.Milliseconds, end, ref remaining, TimePeriodField.Milliseconds);
+                ticks = FieldBetween(units & PeriodUnits.Ticks, end, ref remaining, TimePeriodField.Ticks);
+            }
+
+            return new Period(years, months, weeks, days, hours, minutes, seconds, milliseconds, ticks);
+        }
+
+        private static int FieldBetween(PeriodUnits units, LocalDate end, ref LocalDate remaining, IDatePeriodField dateField)
+        {
+            if (units == 0)
+            {
+                return 0;
+            }
+            int value = dateField.Subtract(end, remaining);
+            remaining = dateField.Add(remaining, value);
+            return value;
+        }
+
+        private static long FieldBetween(PeriodUnits units, LocalDateTime end, ref LocalDateTime remaining, TimePeriodField timeField)
+        {
+            if (units == 0)
+            {
+                return 0;
+            }
+            long value = GetTimeBetween(remaining, end, timeField);
+            remaining = timeField.Add(remaining, value);
+            return value;
+        }
+
+        private static long GetTimeBetween(LocalDateTime start, LocalDateTime end, TimePeriodField periodField)
+        {
+            int days = DatePeriodFields.DaysField.Subtract(end.Date, start.Date);
+            long units = periodField.Subtract(end.TimeOfDay, start.TimeOfDay);
+            return units + days * periodField.UnitsPerDay;
         }
 
         /// <summary>
-        /// Adds the contents of this period to the given local instant in the given calendar system.
+        /// Adds the contents of this period to the given date and time, with the given scale (either 1 or -1, usually).
         /// </summary>
-        internal LocalInstant AddTo(LocalInstant localInstant, CalendarSystem calendar, int scalar)
+        internal LocalDateTime AddTo(LocalDate date, LocalTime time, int scalar)
         {
-            Preconditions.CheckNotNull(calendar, "calendar");
+            date = DatePeriodFields.YearsField.Add(date, years * scalar);
+            date = DatePeriodFields.MonthsField.Add(date, months * scalar);
+            date = DatePeriodFields.WeeksField.Add(date, weeks * scalar);
+            date = DatePeriodFields.DaysField.Add(date, days * scalar);
 
-            PeriodFieldSet fields = calendar.PeriodFields;
-            LocalInstant result = localInstant;
-
-            if (years != 0) result = fields.Years.Add(result, years * scalar);
-            if (months != 0) result = fields.Months.Add(result, months * scalar);
-            if (weeks != 0) result = fields.Weeks.Add(result, weeks * scalar);
-            if (days != 0) result = fields.Days.Add(result, days * scalar);
-            if (hours != 0) result = fields.Hours.Add(result, hours * scalar);
-            if (minutes != 0) result = fields.Minutes.Add(result, minutes * scalar);
-            if (seconds != 0) result = fields.Seconds.Add(result, seconds * scalar);
-            if (milliseconds != 0) result = fields.Milliseconds.Add(result, milliseconds * scalar);
-            if (ticks != 0) result = fields.Ticks.Add(result, ticks * scalar);
+            LocalDateTime result = new LocalDateTime(date, time);
+            result = TimePeriodField.Hours.Add(result, hours * scalar);
+            result = TimePeriodField.Minutes.Add(result, minutes * scalar);
+            result = TimePeriodField.Seconds.Add(result, seconds * scalar);
+            result = TimePeriodField.Milliseconds.Add(result, milliseconds * scalar);
+            result = TimePeriodField.Ticks.Add(result, ticks * scalar);
 
             return result;
         }
-
 
         /// <summary>
         /// Returns the exact difference between two date/times.
@@ -552,6 +547,7 @@ namespace NodaTime
         /// result would be valid due to balancing positive and negative values, but for simplicity there is
         /// no attempt to work around this - in realistic periods, it shouldn't be a problem.</exception>
         /// <returns>The duration of the period.</returns>
+        [Pure]
         public Duration ToDuration()
         {
             if (Months != 0 || Years != 0)
@@ -585,6 +581,7 @@ namespace NodaTime
         /// changes made to the builder are not reflected in this period.
         /// </summary>
         /// <returns>A builder with the same values and units as this period.</returns>
+        [Pure]
         public PeriodBuilder ToBuilder()
         {
             return new PeriodBuilder(this);
@@ -611,12 +608,13 @@ namespace NodaTime
         /// shouldn't be a problem.</exception>
         /// <returns>The normalized period.</returns>
         /// <seealso cref="NormalizingEqualityComparer"/>
+        [Pure]
         public Period Normalize()
         {
             // Simplest way to normalize: grab all the fields up to "week" and
             // sum them.
             long totalTicks = TotalStandardTicks;
-            long days = totalTicks / NodaConstants.TicksPerStandardDay;
+            int days = (int) (totalTicks / NodaConstants.TicksPerStandardDay);
             long hours = (totalTicks / NodaConstants.TicksPerHour) % NodaConstants.HoursPerStandardDay;
             long minutes = (totalTicks / NodaConstants.TicksPerMinute) % NodaConstants.MinutesPerHour;
             long seconds = (totalTicks / NodaConstants.TicksPerSecond) % NodaConstants.SecondsPerMinute;
@@ -624,47 +622,6 @@ namespace NodaTime
             long ticks = totalTicks % NodaConstants.TicksPerMillisecond;
 
             return new Period(this.years, this.months, 0 /* weeks */, days, hours, minutes, seconds, milliseconds, ticks);
-        }
-
-        /// <summary>
-        /// Returns the PeriodField for the given unit value, or null if the values does
-        /// not represent a single unit.
-        /// </summary>
-        private static IPeriodField GetSingleField(PeriodFieldSet fields, PeriodUnits units)
-        {
-            switch (units)
-            {
-                case PeriodUnits.Years: return fields.Years;
-                case PeriodUnits.Months: return fields.Months;
-                case PeriodUnits.Weeks: return fields.Weeks;;
-                case PeriodUnits.Days: return fields.Days;
-                case PeriodUnits.Hours: return fields.Hours;
-                case PeriodUnits.Minutes: return fields.Minutes;
-                case PeriodUnits.Seconds: return fields.Seconds;
-                case PeriodUnits.Milliseconds: return fields.Milliseconds;
-                case PeriodUnits.Ticks: return fields.Ticks;
-                default: return null;
-            }
-        }
-
-        /// <summary>
-        /// Returns the PeriodField for the given index, in the range 0-8 inclusive.
-        /// </summary>
-        private static IPeriodField GetFieldForIndex(PeriodFieldSet fields, int index)
-        {
-            switch (index)
-            {
-                case YearIndex: return fields.Years;
-                case MonthIndex: return fields.Months;
-                case WeekIndex: return fields.Weeks;
-                case DayIndex: return fields.Days;
-                case HourIndex: return fields.Hours;
-                case MinuteIndex: return fields.Minutes;
-                case SecondIndex: return fields.Seconds;
-                case MillisecondIndex: return fields.Milliseconds;
-                case TickIndex: return fields.Ticks;
-                default: throw new ArgumentOutOfRangeException("index");
-            }
         }
 
         #region Helper properties
@@ -675,7 +632,7 @@ namespace NodaTime
         /// This property returns zero both when the property has been explicitly set to zero and when the period does not
         /// contain this property.
         /// </remarks>
-        public long Years { get { return years; } }
+        public int Years { get { return years; } }
         /// <summary>
         /// Gets the number of months within this period.
         /// </summary>
@@ -683,7 +640,7 @@ namespace NodaTime
         /// This property returns zero both when the property has been explicitly set to zero and when the period does not
         /// contain this property.
         /// </remarks>
-        public long Months { get { return months; } }
+        public int Months { get { return months; } }
         /// <summary>
         /// Gets the number of weeks within this period.
         /// </summary>
@@ -691,7 +648,7 @@ namespace NodaTime
         /// This property returns zero both when the property has been explicitly set to zero and when the period does not
         /// contain this property.
         /// </remarks>
-        public long Weeks { get { return weeks; } }
+        public int Weeks { get { return weeks; } }
         /// <summary>
         /// Gets the number of days within this period.
         /// </summary>
@@ -699,7 +656,7 @@ namespace NodaTime
         /// This property returns zero both when the property has been explicitly set to zero and when the period does not
         /// contain this property.
         /// </remarks>
-        public long Days { get { return days; } }
+        public int Days { get { return days; } }
         /// <summary>
         /// Gets the number of hours within this period.
         /// </summary>
@@ -810,7 +767,7 @@ namespace NodaTime
         }
         #endregion
 
-        #if !PCL
+#if !PCL
         #region Binary serialization
         private const string YearsSerializationName = "years";
         private const string MonthsSerializationName = "months";
@@ -824,14 +781,15 @@ namespace NodaTime
 
         /// <summary>
         /// Private constructor only present for serialization.
+        /// TODO(2.0): Revisit this for 2.0.
         /// </summary>
         /// <param name="info">The <see cref="SerializationInfo"/> to fetch data from.</param>
         /// <param name="context">The source for this deserialization.</param>
         private Period(SerializationInfo info, StreamingContext context)
-            : this(info.GetInt64(YearsSerializationName),
-                   info.GetInt64(MonthsSerializationName),
-                   info.GetInt64(WeeksSerializationName),
-                   info.GetInt64(DaysSerializationName),
+            : this((int) info.GetInt64(YearsSerializationName),
+                   (int) info.GetInt64(MonthsSerializationName),
+                   (int) info.GetInt64(WeeksSerializationName),
+                   (int) info.GetInt64(DaysSerializationName),
                    info.GetInt64(HoursSerializationName),
                    info.GetInt64(MinutesSerializationName),
                    info.GetInt64(SecondsSerializationName),
@@ -842,15 +800,17 @@ namespace NodaTime
 
         /// <summary>
         /// Implementation of <see cref="ISerializable.GetObjectData"/>.
+        /// TODO(2.0): Revisit this for 2.0.
         /// </summary>
         /// <param name="info">The <see cref="SerializationInfo"/> to populate with data.</param>
         /// <param name="context">The destination for this serialization.</param>
+        [System.Security.SecurityCritical]
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            info.AddValue(YearsSerializationName, years);
-            info.AddValue(MonthsSerializationName, months);
-            info.AddValue(WeeksSerializationName, weeks);
-            info.AddValue(DaysSerializationName, days);
+            info.AddValue(YearsSerializationName, (long) years);
+            info.AddValue(MonthsSerializationName, (long) months);
+            info.AddValue(WeeksSerializationName, (long) weeks);
+            info.AddValue(DaysSerializationName, (long) days);
             info.AddValue(HoursSerializationName, hours);
             info.AddValue(MinutesSerializationName, minutes);
             info.AddValue(SecondsSerializationName, seconds);

@@ -2,7 +2,6 @@
 // Use of this source code is governed by the Apache License 2.0,
 // as found in the LICENSE.txt file.
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -153,15 +152,6 @@ namespace NodaTime.TimeZones.IO
                     WriteInt32((int) 0xc0000000 | millis);
                 }
             }
-        }
-
-        /// <summary>
-        /// Writes a boolean value to the stream.
-        /// </summary>
-        /// <param name="value">The value to write.</param>
-        internal void WriteBoolean(bool value)
-        {
-            WriteByte((byte)(value ? 1 : 0));
         }
 
         /// <summary>

@@ -7,11 +7,12 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.Serialization;
 using System.Xml;
+using System.Xml.Schema;
+using System.Xml.Serialization;
+using JetBrains.Annotations;
 using NodaTime.Calendars;
 using NodaTime.Text;
 using NodaTime.Utility;
-using System.Xml.Serialization;
-using System.Xml.Schema;
 
 namespace NodaTime
 {
@@ -180,6 +181,7 @@ namespace NodaTime
         /// Converts this offset date and time to an instant in time by subtracting the offset from the local date and time.
         /// </summary>
         /// <returns>The instant represented by this offset date and time</returns>
+        [Pure]
         public Instant ToInstant()
         {
             return localDateTime.LocalInstant.Minus(offset);
@@ -199,6 +201,7 @@ namespace NodaTime
         /// </para>
         /// </remarks>
         /// <returns>A zoned date/time with the same local time and a fixed time zone using the offset from this value.</returns>
+        [Pure]
         public ZonedDateTime InFixedZone()
         {
             return new ZonedDateTime(localDateTime, offset, DateTimeZone.ForOffset(offset));
@@ -209,6 +212,7 @@ namespace NodaTime
         /// </summary>
         /// <returns>A DateTimeOffset with the same local date/time and offset as this. The <see cref="DateTime"/> part of
         /// the result always has a "kind" of Unspecified.</returns>
+        [Pure]
         public DateTimeOffset ToDateTimeOffset()
         {
             return new DateTimeOffset(localDateTime.ToDateTimeUnspecified(), offset.ToTimeSpan());
@@ -220,10 +224,11 @@ namespace NodaTime
         /// </summary>
         /// <param name="dateTimeOffset">DateTimeOffset to convert</param>
         /// <returns>The converted offset date and time</returns>
+        [Pure]
         public static OffsetDateTime FromDateTimeOffset(DateTimeOffset dateTimeOffset)
         {
             return new OffsetDateTime(LocalDateTime.FromDateTime(dateTimeOffset.DateTime),
-                NodaTime.Offset.FromTimeSpan(dateTimeOffset.Offset));
+                Offset.FromTimeSpan(dateTimeOffset.Offset));
         }
 
         /// <summary>
@@ -233,12 +238,25 @@ namespace NodaTime
         /// </summary>
         /// <param name="calendarSystem">The calendar system to convert this local date to.</param>
         /// <returns>The converted OffsetDateTime.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="calendarSystem"/> is null.</exception>
-        public OffsetDateTime WithCalendar(CalendarSystem calendarSystem)
+        [Pure]
+        public OffsetDateTime WithCalendar([NotNull] CalendarSystem calendarSystem)
         {
             return new OffsetDateTime(localDateTime.WithCalendar(calendarSystem), offset);
         }
 
+        /// <summary>
+        /// Creates a new OffsetDateTime representing the instant in time in the same calendar,
+        /// but with a different offset. The local date and time is adjusted accordingly.
+        /// </summary>
+        /// <param name="offset">The new offset to use.</param>
+        /// <returns>The converted OffsetDateTime.</returns>
+        [Pure]
+        public OffsetDateTime WithOffset(Offset offset)
+        {
+            LocalDateTime newLocalDateTime = new LocalDateTime(LocalDateTime.LocalInstant.Minus(this.Offset).Plus(offset), Calendar);
+            return new OffsetDateTime(newLocalDateTime, offset);
+        }
+        
         /// <summary>
         /// Returns a hash code for this local date.
         /// </summary>
@@ -279,10 +297,11 @@ namespace NodaTime
 
         #region Formatting
         /// <summary>
-        ///   Returns a <see cref="System.String" /> that represents this instance.
+        /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
         /// <returns>
-        ///   A <see cref="System.String" /> that represents this instance.
+        /// The value of the current instance in the default format pattern ("G"), using the current thread's
+        /// culture to obtain a format provider.
         /// </returns>
         public override string ToString()
         {
@@ -290,18 +309,16 @@ namespace NodaTime
         }
 
         /// <summary>
-        ///   Formats the value of the current instance using the specified format.
+        /// Formats the value of the current instance using the specified pattern.
         /// </summary>
         /// <returns>
-        ///   A <see cref="T:System.String" /> containing the value of the current instance in the specified format.
+        /// A <see cref="T:System.String" /> containing the value of the current instance in the specified format.
         /// </returns>
-        /// <param name="patternText">The <see cref="T:System.String" /> specifying the pattern to use.
-        ///   -or- 
-        ///   null to use the default pattern defined for the type of the <see cref="T:System.IFormattable" /> implementation. 
+        /// <param name="patternText">The <see cref="T:System.String" /> specifying the pattern to use,
+        /// or null to use the default format pattern ("G").
         /// </param>
-        /// <param name="formatProvider">The <see cref="T:System.IFormatProvider" /> to use to format the value.
-        ///   -or- 
-        ///   null to obtain the numeric format information from the current locale setting of the operating system. 
+        /// <param name="formatProvider">The <see cref="T:System.IFormatProvider" /> to use when formatting the value,
+        /// or null to use the current thread's culture to obtain a format provider.
         /// </param>
         /// <filterpriority>2</filterpriority>
         public string ToString(string patternText, IFormatProvider formatProvider)
@@ -453,7 +470,7 @@ namespace NodaTime
         void IXmlSerializable.ReadXml(XmlReader reader)
         {
             Preconditions.CheckNotNull(reader, "reader");
-            var pattern = OffsetDateTimePattern.ExtendedIsoPattern;
+            var pattern = OffsetDateTimePattern.Rfc3339Pattern;
             if (reader.MoveToAttribute("calendar"))
             {
                 string newCalendarId = reader.Value;
@@ -474,7 +491,7 @@ namespace NodaTime
             {
                 writer.WriteAttributeString("calendar", Calendar.Id);
             }
-            writer.WriteString(OffsetDateTimePattern.ExtendedIsoPattern.Format(this));
+            writer.WriteString(OffsetDateTimePattern.Rfc3339Pattern.Format(this));
         }
         #endregion
 
@@ -501,6 +518,7 @@ namespace NodaTime
         /// </summary>
         /// <param name="info">The <see cref="SerializationInfo"/> to populate with data.</param>
         /// <param name="context">The destination for this serialization.</param>
+        [System.Security.SecurityCritical]
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.AddValue(LocalTicksSerializationName, localDateTime.LocalInstant.Ticks);

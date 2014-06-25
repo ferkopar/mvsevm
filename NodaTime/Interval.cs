@@ -6,9 +6,10 @@ using System;
 using System.Runtime.Serialization;
 using System.Xml;
 using System.Xml.Schema;
+using System.Xml.Serialization;
+using JetBrains.Annotations;
 using NodaTime.Text;
 using NodaTime.Utility;
-using System.Xml.Serialization;
 
 namespace NodaTime
 {
@@ -97,6 +98,7 @@ namespace NodaTime
         /// </remarks>
         /// <param name="instant">Instant to test.</param>
         /// <returns>True if this interval contains the given instant; false otherwise.</returns>
+        [Pure]
         public bool Contains(Instant instant)
         {
             return instant >= start && (instant < end || end == Instant.MaxValue);
@@ -152,13 +154,14 @@ namespace NodaTime
         }
 
         /// <summary>
-        /// Returns a string representation of this interval. The format of this string is
-        /// not yet specified, and may change without notice. 
+        /// Returns a string representation of this interval, in extended ISO-8601 format: the format
+        /// is "start/end" where each instant uses a format of "yyyy'-'MM'-'dd'T'HH':'mm':'ss;FFFFFFF'Z'".
         /// </summary>
         /// <returns>A string representation of this interval.</returns>
         public override string ToString()
         {
-            return string.Format("Interval: [{0}, {1})", Start, End);
+            var pattern = InstantPattern.ExtendedIsoPattern;
+            return pattern.Format(Start) + "/" + pattern.Format(End);
         }
         #endregion
 
@@ -234,8 +237,8 @@ namespace NodaTime
         /// <param name="info">The <see cref="SerializationInfo"/> to fetch data from.</param>
         /// <param name="context">The source for this deserialization.</param>
         private Interval(SerializationInfo info, StreamingContext context)
-            : this(new Instant(info.GetInt64(StartTicksSerializationName)),
-                   new Instant(info.GetInt64(EndTicksSerializationName)))
+            : this(Instant.FromTicksSinceUnixEpoch(info.GetInt64(StartTicksSerializationName)),
+                   Instant.FromTicksSinceUnixEpoch(info.GetInt64(EndTicksSerializationName)))
         {
         }
 
@@ -244,6 +247,7 @@ namespace NodaTime
         /// </summary>
         /// <param name="info">The <see cref="SerializationInfo"/> to populate with data.</param>
         /// <param name="context">The destination for this serialization.</param>
+        [System.Security.SecurityCritical]
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.AddValue(StartTicksSerializationName, start.Ticks);

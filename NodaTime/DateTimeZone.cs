@@ -4,7 +4,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading;
+using JetBrains.Annotations;
+using NodaTime.Annotations;
 using NodaTime.TimeZones;
 using NodaTime.Utility;
 
@@ -75,9 +76,14 @@ namespace NodaTime
     /// that equivalent time zones compare as equal.</para>
     /// </remarks>
     /// <threadsafety>
-    /// All time zone implementations within Noda Time are immutable and thread-safe. See the thread safety
-    /// section of the user guide for more information.
+    /// All time zone implementations within Noda Time are immutable and thread-safe.
+    /// See the thread safety section of the user guide for more information.
+    /// It is expected that third party implementations will be immutable and thread-safe as well:
+    /// code within Noda Time assumes that it can hand out time zones to any thread without any concerns. If you
+    /// implement a non-thread-safe time zone, you will need to use it extremely carefully. We'd recommend that you
+    /// avoid this if possible.
     /// </threadsafety>
+    [Immutable]
     public abstract class DateTimeZone : IEquatable<DateTimeZone>, IZoneIntervalMap
     {
         /// <summary>
@@ -235,7 +241,7 @@ namespace NodaTime
         /// <returns>The struct containing up to two ZoneInterval references.</returns>
         internal virtual ZoneIntervalPair GetZoneIntervalPair(LocalInstant localInstant)
         {
-            Instant firstGuess = new Instant(localInstant.Ticks);
+            Instant firstGuess = Instant.FromTicksSinceUnixEpoch(localInstant.Ticks);
             ZoneInterval interval = GetZoneInterval(firstGuess);
 
             // Most of the time we'll go into here... the local instant and the instant
@@ -331,7 +337,7 @@ namespace NodaTime
         public ZoneLocalMapping MapLocal(LocalDateTime localDateTime)
         {
             LocalInstant localInstant = localDateTime.LocalInstant;
-            Instant firstGuess = new Instant(localInstant.Ticks);
+            Instant firstGuess = Instant.FromTicksSinceUnixEpoch(localInstant.Ticks);
             ZoneInterval interval = GetZoneInterval(firstGuess);
 
             // Most of the time we'll go into here... the local instant and the instant
@@ -384,9 +390,8 @@ namespace NodaTime
         /// </remarks>
         /// <param name="localDateTime">The local date and time to map in this time zone.</param>
         /// <param name="resolver">The resolver to apply to the mapping.</param>
-        /// <exception cref="ArgumentNullException"><paramref name="resolver"/> is null.</exception>
         /// <returns>The result of resolving the mapping.</returns>
-        public ZonedDateTime ResolveLocal(LocalDateTime localDateTime, ZoneLocalMappingResolver resolver)
+        public ZonedDateTime ResolveLocal(LocalDateTime localDateTime, [NotNull] ZoneLocalMappingResolver resolver)
         {
             Preconditions.CheckNotNull(resolver, "resolver");
             return resolver(MapLocal(localDateTime));
@@ -480,7 +485,7 @@ namespace NodaTime
 
         private ZoneInterval GetIntervalBeforeGap(LocalInstant localInstant)
         {
-            Instant guess = new Instant(localInstant.Ticks);
+            Instant guess = Instant.FromTicksSinceUnixEpoch(localInstant.Ticks);
             ZoneInterval guessInterval = GetZoneInterval(guess);
             // If the local interval occurs before the zone interval we're looking at starts,
             // we need to find the earlier one; otherwise this interval must come after the gap, and
@@ -497,7 +502,7 @@ namespace NodaTime
 
         private ZoneInterval GetIntervalAfterGap(LocalInstant localInstant)
         {
-            Instant guess = new Instant(localInstant.Ticks);
+            Instant guess = Instant.FromTicksSinceUnixEpoch(localInstant.Ticks);
             ZoneInterval guessInterval = GetZoneInterval(guess);
             // If the local interval occurs before the zone interval we're looking at starts,
             // it's the one we're looking for. Otherwise, we need to find the next interval.
@@ -529,6 +534,7 @@ namespace NodaTime
         /// Creates a fixed time zone for offsets -23.5 to +23.5 at every half hour,
         /// fixing the 0 offset as DateTimeZone.Utc.
         /// </summary>
+        [NotNull]
         private static DateTimeZone[] BuildFixedZoneCache()
         {
             DateTimeZone[] ret = new DateTimeZone[FixedZoneCacheSize];
@@ -537,7 +543,7 @@ namespace NodaTime
                 int offsetMillis = i * FixedZoneCacheGranularityMilliseconds + FixedZoneCacheMinimumMilliseconds;
                 ret[i] = new FixedDateTimeZone(Offset.FromMilliseconds(offsetMillis));
             }
-            ret[-FixedZoneCacheMinimumMilliseconds / FixedZoneCacheGranularityMilliseconds] = DateTimeZone.Utc;
+            ret[-FixedZoneCacheMinimumMilliseconds / FixedZoneCacheGranularityMilliseconds] = Utc;
             return ret;
         }
 

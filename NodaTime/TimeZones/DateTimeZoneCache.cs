@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using JetBrains.Annotations;
+using NodaTime.Annotations;
 using NodaTime.Utility;
 
 namespace NodaTime.TimeZones
@@ -21,6 +23,7 @@ namespace NodaTime.TimeZones
     /// <seealso cref="DateTimeZoneProviders"/>
     /// <threadsafety>All members of this type are thread-safe as long as the underlying <c>IDateTimeZoneSource</c>
     /// implementation is thread-safe.</threadsafety>
+    [Immutable] // Public only; caches are naturally mutable internally.
     public sealed class DateTimeZoneCache : IDateTimeZoneProvider
     {
         private readonly object accessLock = new object();
@@ -38,9 +41,8 @@ namespace NodaTime.TimeZones
         /// advertised by the source.
         /// </remarks>
         /// <param name="source">The <see cref="IDateTimeZoneSource"/> for this provider.</param>
-        /// <exception cref="ArgumentNullException"><paramref name="source"/> is null.</exception>
         /// <exception cref="InvalidDateTimeZoneSourceException"><paramref name="source"/> violates its contract.</exception>
-        public DateTimeZoneCache(IDateTimeZoneSource source)
+        public DateTimeZoneCache([NotNull] IDateTimeZoneSource source)
         {
             this.source = Preconditions.CheckNotNull(source, "source");
             this.providerVersionId = source.VersionId;

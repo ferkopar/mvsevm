@@ -4,6 +4,7 @@
 
 using System;
 using System.Globalization;
+using NodaTime.Annotations;
 using NodaTime.Globalization;
 using NodaTime.Text.Patterns;
 using NodaTime.Utility;
@@ -18,6 +19,7 @@ namespace NodaTime.Text
     /// may be shared freely between threads. We recommend only using read-only cultures for patterns, although this is
     /// not currently enforced.
     /// </threadsafety>
+    [Immutable] // Well, assuming an immutable culture...
     public sealed class LocalDateTimePattern : IPattern<LocalDateTime>
     {
         internal static readonly LocalDateTime DefaultTemplateValue = new LocalDateTime(2000, 1, 1, 0, 0);
@@ -129,7 +131,7 @@ namespace NodaTime.Text
         /// <param name="templateValue">Template value to use for unspecified fields</param>
         /// <returns>A pattern for parsing and formatting local date/times.</returns>
         /// <exception cref="InvalidPatternException">The pattern text was invalid.</exception>
-        internal static LocalDateTimePattern Create(string patternText, NodaFormatInfo formatInfo, LocalDateTime templateValue)
+        private static LocalDateTimePattern Create(string patternText, NodaFormatInfo formatInfo, LocalDateTime templateValue)
         {
             Preconditions.CheckNotNull(patternText, "patternText");
             Preconditions.CheckNotNull(formatInfo, "formatInfo");
@@ -191,9 +193,7 @@ namespace NodaTime.Text
         /// Creates a pattern for the given pattern text in the invariant culture.
         /// </summary>
         /// <remarks>
-        /// See the user guide for the available pattern text options. Note that the current culture
-        /// is captured at the time this method is called - it is not captured at the point of parsing
-        /// or formatting values.
+        /// See the user guide for the available pattern text options.
         /// </remarks>
         /// <param name="patternText">Pattern text to create the pattern for</param>
         /// <returns>A pattern for parsing and formatting local date/times.</returns>

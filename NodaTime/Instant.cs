@@ -2,14 +2,15 @@
 // Use of this source code is governed by the Apache License 2.0,
 // as found in the LICENSE.txt file.
 
-using NodaTime.Text;
-using NodaTime.Utility;
 using System;
 using System.Globalization;
 using System.Runtime.Serialization;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
+using JetBrains.Annotations;
+using NodaTime.Text;
+using NodaTime.Utility;
 
 namespace NodaTime
 {
@@ -65,7 +66,7 @@ namespace NodaTime
         /// </remarks>
         /// <param name="ticks">The number of ticks since the Unix epoch. Negative values represent instants before the
         /// Unix epoch.</param>
-        public Instant(long ticks)
+        private Instant(long ticks)
         {
             this.ticks = ticks;
         }
@@ -168,6 +169,7 @@ namespace NodaTime
         /// </summary>
         /// <param name="ticksToAdd">The ticks to add to this instant to create the return value.</param>
         /// <returns>The result of adding the given number of ticks to this instant.</returns>
+        [Pure]
         public Instant PlusTicks(long ticksToAdd)
         {
             return new Instant(this.ticks + ticksToAdd);
@@ -193,6 +195,7 @@ namespace NodaTime
         /// </remarks>
         /// <param name="offset">The right hand side of the operator.</param>
         /// <returns>A new <see cref="LocalInstant" /> representing the sum of the given values.</returns>
+        [Pure]
         internal LocalInstant Plus(Offset offset)
         {
             return new LocalInstant(Ticks + offset.Ticks);
@@ -214,6 +217,7 @@ namespace NodaTime
         /// </summary>
         /// <param name="duration">The duration to add</param>
         /// <returns>A new <see cref="Instant" /> representing the result of the addition.</returns>
+        [Pure]
         public Instant Plus(Duration duration)
         {
             return this + duration;
@@ -227,7 +231,7 @@ namespace NodaTime
         /// <returns>A new <see cref="Instant" /> representing the difference of the given values.</returns>
         public static Duration operator -(Instant left, Instant right)
         {
-            return new Duration(left.Ticks - right.Ticks);
+            return Duration.FromTicks(left.Ticks - right.Ticks);
         }
 
         /// <summary>
@@ -257,6 +261,7 @@ namespace NodaTime
         /// </summary>
         /// <param name="other">The other instant to subtract</param>
         /// <returns>A new <see cref="Instant" /> representing the result of the subtraction.</returns>
+        [Pure]
         public Duration Minus(Instant other)
         {
             return this - other;
@@ -268,6 +273,7 @@ namespace NodaTime
         /// <param name="left">The left hand side of the operator.</param>
         /// <param name="right">The right hand side of the operator.</param>
         /// <returns>A new <see cref="Instant" /> representing the difference of the given values.</returns>
+        [Pure]
         public static Instant Subtract(Instant left, Duration right)
         {
             return left - right;
@@ -278,6 +284,7 @@ namespace NodaTime
         /// </summary>
         /// <param name="duration">The duration to subtract</param>
         /// <returns>A new <see cref="Instant" /> representing the result of the subtraction.</returns>
+        [Pure]
         public Instant Minus(Duration duration)
         {
             return this - duration;
@@ -419,7 +426,7 @@ namespace NodaTime
         /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
         /// <returns>
-        /// The value of the current instance in the standard format pattern, using the current thread's
+        /// The value of the current instance in the default format pattern ("g"), using the current thread's
         /// culture to obtain a format provider.
         /// </returns>
         public override string ToString()
@@ -434,7 +441,7 @@ namespace NodaTime
         /// A <see cref="T:System.String" /> containing the value of the current instance in the specified format.
         /// </returns>
         /// <param name="patternText">The <see cref="T:System.String" /> specifying the pattern to use,
-        /// or null to use the default format pattern.
+        /// or null to use the default format pattern ("g").
         /// </param>
         /// <param name="formatProvider">The <see cref="T:System.IFormatProvider" /> to use when formatting the value,
         /// or null to use the current thread's culture to obtain a format provider.
@@ -466,6 +473,7 @@ namespace NodaTime
         /// of <see cref="DateTimeKind.Utc"/> and represents the same instant of time as this value.
         /// </summary>
         /// <returns>A <see cref="DateTime"/> representing the same instant in time as this value, with a kind of "universal".</returns>
+        [Pure]
         public DateTime ToDateTimeUtc()
         {
             return new DateTime((this - NodaConstants.BclEpoch).Ticks, DateTimeKind.Utc);
@@ -475,6 +483,7 @@ namespace NodaTime
         /// Constructs a <see cref="DateTimeOffset"/> from this Instant which has an offset of zero.
         /// </summary>
         /// <returns>A <see cref="DateTimeOffset"/> representing the same instant in time as this value.</returns>
+        [Pure]
         public DateTimeOffset ToDateTimeOffset()
         {
             return new DateTimeOffset((this - NodaConstants.BclEpoch).Ticks, TimeSpan.Zero);
@@ -552,6 +561,7 @@ namespace NodaTime
         /// </summary>
         /// <returns>A <see cref="ZonedDateTime"/> for the same instant, in the UTC time zone
         /// and the ISO-8601 calendar</returns>
+        [Pure]
         public ZonedDateTime InUtc()
         {
             return new ZonedDateTime(this, DateTimeZone.Utc, CalendarSystem.Iso);
@@ -564,8 +574,8 @@ namespace NodaTime
         /// <param name="zone">The time zone in which to represent this instant.</param>
         /// <returns>A <see cref="ZonedDateTime"/> for the same instant, in the given time zone
         /// and the ISO-8601 calendar</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="zone"/> is null.</exception>
-        public ZonedDateTime InZone(DateTimeZone zone)
+        [Pure]
+        public ZonedDateTime InZone([NotNull] DateTimeZone zone)
         {
             Preconditions.CheckNotNull(zone, "zone");
             return new ZonedDateTime(this, zone, CalendarSystem.Iso);
@@ -579,8 +589,8 @@ namespace NodaTime
         /// <param name="calendar">The calendar system in which to represent this instant.</param>
         /// <returns>A <see cref="ZonedDateTime"/> for the same instant, in the given time zone
         /// and calendar</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="zone"/> or <paramref name="calendar"/> is null.</exception>
-        public ZonedDateTime InZone(DateTimeZone zone, CalendarSystem calendar)
+        [Pure]
+        public ZonedDateTime InZone([NotNull] DateTimeZone zone, [NotNull] CalendarSystem calendar)
         {
             Preconditions.CheckNotNull(zone, "zone");
             Preconditions.CheckNotNull(calendar, "calendar");
@@ -594,6 +604,7 @@ namespace NodaTime
         /// <param name="offset">The offset from UTC with which to represent this instant.</param>
         /// <returns>An <see cref="OffsetDateTime"/> for the same instant, with the given offset
         /// in the ISO calendar system</returns>
+        [Pure]
         public OffsetDateTime WithOffset(Offset offset)
         {
             return new OffsetDateTime(new LocalDateTime(this.Plus(offset)), offset);
@@ -607,8 +618,8 @@ namespace NodaTime
         /// <param name="calendar">The calendar system in which to represent this instant.</param>
         /// <returns>An <see cref="OffsetDateTime"/> for the same instant, with the given offset
         /// and calendar</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="calendar"/> is null.</exception>
-        public OffsetDateTime WithOffset(Offset offset, CalendarSystem calendar)
+        [Pure]
+        public OffsetDateTime WithOffset(Offset offset, [NotNull] CalendarSystem calendar)
         {
             Preconditions.CheckNotNull(calendar, "calendar");
             return new OffsetDateTime(new LocalDateTime(this.Plus(offset), calendar), offset);
@@ -657,6 +668,7 @@ namespace NodaTime
         /// </summary>
         /// <param name="info">The <see cref="SerializationInfo"/> to populate with data.</param>
         /// <param name="context">The destination for this serialization.</param>
+        [System.Security.SecurityCritical]
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.AddValue(TicksSerializationName, ticks);

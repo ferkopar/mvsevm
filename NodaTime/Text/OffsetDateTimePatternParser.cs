@@ -2,11 +2,10 @@
 // Use of this source code is governed by the Apache License 2.0,
 // as found in the LICENSE.txt file.
 
+using System.Collections.Generic;
 using NodaTime.Globalization;
 using NodaTime.Properties;
 using NodaTime.Text.Patterns;
-using NodaTime.Utility;
-using System.Collections.Generic;
 
 namespace NodaTime.Text
 {
@@ -111,7 +110,7 @@ namespace NodaTime.Text
             builder.AddFormatAction((value, sb) => offsetPattern.FormatPartial(value.Offset, sb));
         }
 
-        internal sealed class OffsetDateTimeParseBucket : ParseBucket<OffsetDateTime>
+        private sealed class OffsetDateTimeParseBucket : ParseBucket<OffsetDateTime>
         {
             internal readonly LocalDatePatternParser.LocalDateParseBucket Date;
             internal readonly LocalTimePatternParser.LocalTimeParseBucket Time;
@@ -124,9 +123,9 @@ namespace NodaTime.Text
                 Offset = templateOffset;
             }
 
-            internal override ParseResult<OffsetDateTime> CalculateValue(PatternFields usedFields)
+            internal override ParseResult<OffsetDateTime> CalculateValue(PatternFields usedFields, string text)
             {
-                var localResult = LocalDateTimePatternParser.LocalDateTimeParseBucket.CombineBuckets(usedFields, Date, Time);
+                var localResult = LocalDateTimePatternParser.LocalDateTimeParseBucket.CombineBuckets(usedFields, Date, Time, text);
                 if (!localResult.Success)
                 {
                     return localResult.ConvertError<OffsetDateTime>();

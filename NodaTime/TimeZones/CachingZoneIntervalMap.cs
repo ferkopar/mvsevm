@@ -49,7 +49,7 @@ namespace NodaTime.TimeZones
         /// If another call is made which maps to the same cache entry number but is for a different
         /// period, the existing hash entry is simply overridden.
         /// </remarks>
-        internal sealed class HashArrayCache : IZoneIntervalMap
+        private sealed class HashArrayCache : IZoneIntervalMap
         {
             // Currently we have no need or way to create hash cache zones with
             // different cache sizes. But the cache size should always be a power of 2 to get the
@@ -124,8 +124,8 @@ namespace NodaTime.TimeZones
                 /// </summary>
                 internal static HashCacheNode CreateNode(int period, IZoneIntervalMap map)
                 {
-                    var periodStart = new Instant((long)period << PeriodShift);
-                    var periodEnd = new Instant((long)(period + 1) << PeriodShift);
+                    var periodStart = Instant.FromTicksSinceUnixEpoch((long)period << PeriodShift);
+                    var periodEnd = Instant.FromTicksSinceUnixEpoch((long)(period + 1) << PeriodShift);
 
                     var interval = map.GetZoneInterval(periodStart);
                     var node = new HashCacheNode(interval, period, null);

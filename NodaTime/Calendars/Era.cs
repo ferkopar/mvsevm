@@ -3,6 +3,7 @@
 // as found in the LICENSE.txt file.
 
 using System;
+using NodaTime.Annotations;
 
 namespace NodaTime.Calendars
 {
@@ -13,6 +14,7 @@ namespace NodaTime.Calendars
     /// read-only fields in this class. These may be compared for reference equality to check for specific
     /// eras.</remarks>
     /// <threadsafety>This type is immutable reference type. See the thread safety section of the user guide for more information.</threadsafety>
+    [Immutable]
     public sealed class Era
     {
         /// <summary>
@@ -31,15 +33,19 @@ namespace NodaTime.Calendars
         public static readonly Era AnnoMartyrum = new Era("AM", "Eras_AnnoMartyrum"); // AM
 
         /// <summary>
-        /// The "Anno Martyrum" or "Era of the Martyrs". This is the sole era used in the Coptic calendar.
-        /// </summary>
-        [Obsolete("Use AnnoMartyrum instead. This field's name was a typo, and it will be removed in a future release.")]
-        public static readonly Era AnnoMartyrm = AnnoMartyrum;
-
-        /// <summary>
         /// The "Anno Hegira" era. This is the sole era used in the Hijri (Islamic) calendar.
         /// </summary>
         public static readonly Era AnnoHegirae = new Era("EH", "Eras_AnnoHegirae"); // AH
+
+        /// <summary>
+        /// The "Anno Mundi" era. This is the sole era used in the Hebrew calendar.
+        /// </summary>
+        public static readonly Era AnnoMundi = new Era("AM", "Eras_AnnoMundi"); // AM
+        
+        /// <summary>
+        /// The "Anno Persico" era. This is the sole era used in the Persian calendar.
+        /// </summary>
+        public static readonly Era AnnoPersico = new Era("AP", "Eras_AnnoPersico"); // AP
 
         private readonly string name;
         private readonly string resourceIdentifier;

@@ -3,6 +3,9 @@
 // as found in the LICENSE.txt file.
 
 using System;
+using System.Diagnostics;
+using System.IO;
+using System.Threading;
 using NodaTime.Utility;
 
 namespace NodaTime.Calendars
@@ -33,26 +36,31 @@ namespace NodaTime.Calendars
             return new LocalInstant(ticks);
         }
 
-        internal static int GetDayOfWeek(LocalInstant localInstant)
+        internal static int GetDayOfWeek(LocalInstant localInstant)            
         {
             // 1970-01-01 is day of week 4, Thursday.
-
-            long daysSince19700101;
-            long ticks = localInstant.Ticks;
-            if (ticks >= 0)
+            unchecked
             {
-                daysSince19700101 = ticks / NodaConstants.TicksPerStandardDay;
-            }
-            else
-            {
-                daysSince19700101 = (ticks - (NodaConstants.TicksPerStandardDay - 1)) / NodaConstants.TicksPerStandardDay;
-                if (daysSince19700101 < -3)
+                long daysSince19700101;
+                long ticks = localInstant.Ticks;
+                if (ticks >= 0)
                 {
-                    return 7 + (int)((daysSince19700101 + 4) % 7);
+                    daysSince19700101 = TickArithmetic.FastTicksToDays(ticks);
                 }
-            }
+                else
+                {
+                    // Can't use TickArithmetic.TicksToDays here as we want to round down;
+                    // division on negative numbers rounds towards zero, while shifting
+                    // rounds down. The combination is awkward to think about for too long :)
+                    daysSince19700101 = ((ticks >> 14) - 52734374) / 52734375;
+                    if (daysSince19700101 < -3)
+                    {
+                        return 7 + (int) ((daysSince19700101 + 4) % 7);
+                    }
+                }
 
-            return 1 + (int)((daysSince19700101 + 3) % 7);
+                return 1 + (int) ((daysSince19700101 + 3) % 7);                
+            }
         }
 
         /// <summary>
@@ -68,10 +76,10 @@ namespace NodaTime.Calendars
             return zeroBasedWeek + 1;
         }
 
-        internal int GetWeeksInWeekYear(int weekYear)
+        private int GetWeeksInWeekYear(int weekYear)
         {
             long startOfWeekYear = GetWeekYearTicks(weekYear);
-            long startOfCalendarYear = yearMonthDayCalculator.GetYearTicks(weekYear);
+            long startOfCalendarYear = yearMonthDayCalculator.GetStartOfYearInTicks(weekYear);
             // The number of days gained or lost in the week year compared with the calendar year.
             // So if the week year starts on December 31st of the previous calendar year, this will be +1.
             // If the week year starts on January 2nd of this calendar year, this will be -1.
@@ -86,10 +94,10 @@ namespace NodaTime.Calendars
         /// <summary>
         /// Returns the ticks at the start of the given week-year.
         /// </summary>
-        internal long GetWeekYearTicks(int weekYear)
+        private long GetWeekYearTicks(int weekYear)
         {
             // Need to be slightly careful here, as the week-year can reasonably be outside the calendar year range.
-            long jan1Millis = yearMonthDayCalculator.GetYearTicksSafe(weekYear);
+            long jan1Millis = yearMonthDayCalculator.GetStartOfYearInTicks(weekYear);
             int jan1DayOfWeek = GetDayOfWeek(new LocalInstant(jan1Millis));
 
             if (jan1DayOfWeek > (8 - minDaysInFirstWeek))

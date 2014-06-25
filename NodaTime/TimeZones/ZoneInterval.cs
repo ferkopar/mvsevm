@@ -4,7 +4,8 @@
 
 using System;
 using System.Diagnostics;
-using System.Text;
+using JetBrains.Annotations;
+using NodaTime.Annotations;
 using NodaTime.Utility;
 
 namespace NodaTime.TimeZones
@@ -13,6 +14,7 @@ namespace NodaTime.TimeZones
     /// Represents a range of time for which a particular Offset applies.
     /// </summary>
     /// <threadsafety>This type is an immutable reference type. See the thread safety section of the user guide for more information.</threadsafety>
+    [Immutable]
     public sealed class ZoneInterval : IEquatable<ZoneInterval>
     {
         private readonly Instant end;
@@ -32,8 +34,7 @@ namespace NodaTime.TimeZones
         /// <param name="wallOffset">The <see cref="WallOffset" /> from UTC for this period including any daylight savings.</param>
         /// <param name="savings">The <see cref="WallOffset" /> daylight savings contribution to the offset.</param>
         /// <exception cref="ArgumentException">If <c><paramref name = "start" /> &gt;= <paramref name = "end" /></c>.</exception>
-        /// <exception cref="ArgumentNullException"><paramref name="name"/> is null.</exception>
-        public ZoneInterval(string name, Instant start, Instant end, Offset wallOffset, Offset savings)
+        public ZoneInterval([NotNull] string name, Instant start, Instant end, Offset wallOffset, Offset savings)
         {
             Preconditions.CheckNotNull(name, "name");
             Preconditions.CheckArgument(start < end, "start", "The start Instant must be less than the end Instant");

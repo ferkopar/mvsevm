@@ -7,8 +7,6 @@ using System.Collections.Generic;
 using System.Text;
 using NodaTime.Calendars;
 using NodaTime.Globalization;
-using NodaTime.Properties;
-using NodaTime.Utility;
 
 namespace NodaTime.Text.Patterns
 {
@@ -22,7 +20,7 @@ namespace NodaTime.Text.Patterns
         /// Creates a character handler for the year specifier (y).
         /// </summary>
         internal static CharacterHandler<TResult, TBucket> CreateYearHandler<TResult, TBucket>
-            (NodaFunc<TResult, int> centuryGetter, NodaFunc<TResult, int> yearGetter, NodaAction<TBucket, int> setter)
+            (Func<TResult, int> centuryGetter, Func<TResult, int> yearGetter, Action<TBucket, int> setter)
             where TBucket : ParseBucket<TResult>
         {
             return (pattern, builder) =>
@@ -134,7 +132,7 @@ namespace NodaTime.Text.Patterns
         /// Creates a character handler for the month-of-year specifier (M).
         /// </summary>
         internal static CharacterHandler<TResult, TBucket> CreateMonthOfYearHandler<TResult, TBucket>
-            (NodaFunc<TResult, int> numberGetter, NodaAction<TBucket, int> textSetter, NodaAction<TBucket, int> numberSetter)
+            (Func<TResult, int> numberGetter, Action<TBucket, int> textSetter, Action<TBucket, int> numberSetter)
             where TBucket : ParseBucket<TResult>
         {
             return (pattern, builder) =>
@@ -178,14 +176,14 @@ namespace NodaTime.Text.Patterns
 
         // Hacky way of building an action which depends on the final set of pattern fields to determine whether to format a month
         // using the genitive form or not.
-        internal sealed class MonthFormatActionHolder<TResult, TBucket> : SteppedPatternBuilder<TResult, TBucket>.IPostPatternParseFormatAction
+        private sealed class MonthFormatActionHolder<TResult, TBucket> : SteppedPatternBuilder<TResult, TBucket>.IPostPatternParseFormatAction
             where TBucket : ParseBucket<TResult>
         {
             private readonly int count;
             private readonly NodaFormatInfo formatInfo;
-            private readonly NodaFunc<TResult, int> getter;
+            private readonly Func<TResult, int> getter;
 
-            internal MonthFormatActionHolder(NodaFormatInfo formatInfo, int count, NodaFunc<TResult, int> getter)
+            internal MonthFormatActionHolder(NodaFormatInfo formatInfo, int count, Func<TResult, int> getter)
             {
                 this.count = count;
                 this.formatInfo = formatInfo;
@@ -197,7 +195,7 @@ namespace NodaTime.Text.Patterns
                 throw new InvalidOperationException("This method should never be called");
             }
 
-            public NodaAction<TResult, StringBuilder> BuildFormatAction(PatternFields finalFields)
+            public Action<TResult, StringBuilder> BuildFormatAction(PatternFields finalFields)
             {
                 bool genitive = (finalFields & PatternFields.DayOfMonth) != 0;
                 IList<string> textValues = count == 3
@@ -211,8 +209,8 @@ namespace NodaTime.Text.Patterns
         /// Creates a character handler for the day specifier (d).
         /// </summary>
         internal static CharacterHandler<TResult, TBucket> CreateDayHandler<TResult, TBucket>
-            (NodaFunc<TResult, int> dayOfMonthGetter, NodaFunc<TResult, int> dayOfWeekGetter,
-             NodaAction<TBucket, int> dayOfMonthSetter, NodaAction<TBucket, int> dayOfWeekSetter)
+            (Func<TResult, int> dayOfMonthGetter, Func<TResult, int> dayOfWeekGetter,
+             Action<TBucket, int> dayOfMonthSetter, Action<TBucket, int> dayOfWeekSetter)
             where TBucket : ParseBucket<TResult>
         {
             return (pattern, builder) =>
@@ -247,7 +245,7 @@ namespace NodaTime.Text.Patterns
         /// Creates a character handler for the era specifier (g).
         /// </summary>
         internal static CharacterHandler<TResult, TBucket> CreateEraHandler<TResult, TBucket>
-            (NodaFunc<TResult, Era> eraFromValue, NodaFunc<TBucket, LocalDatePatternParser.LocalDateParseBucket> dateBucketFromBucket)
+            (Func<TResult, Era> eraFromValue, Func<TBucket, LocalDatePatternParser.LocalDateParseBucket> dateBucketFromBucket)
             where TBucket : ParseBucket<TResult>
         {
             return (pattern, builder) =>
@@ -269,7 +267,7 @@ namespace NodaTime.Text.Patterns
         /// Creates a character handler for the calendar specifier (c).
         /// </summary>
         internal static CharacterHandler<TResult, TBucket> CreateCalendarHandler<TResult, TBucket>
-            (NodaFunc<TResult, CalendarSystem> getter, NodaAction<TBucket, CalendarSystem> setter)
+            (Func<TResult, CalendarSystem> getter, Action<TBucket, CalendarSystem> setter)
             where TBucket : ParseBucket<TResult>
         {
             return (pattern, builder) =>
@@ -288,7 +286,7 @@ namespace NodaTime.Text.Patterns
                             return null;
                         }
                     }
-                    return ParseResult<TResult>.NoMatchingCalendarSystem;
+                    return ParseResult<TResult>.NoMatchingCalendarSystem(cursor);
                 });
                 builder.AddFormatAction((value, sb) => sb.Append(getter(value).Id));
             };

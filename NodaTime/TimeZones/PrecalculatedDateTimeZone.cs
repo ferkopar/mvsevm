@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using NodaTime.Annotations;
 using NodaTime.TimeZones.IO;
 using NodaTime.Utility;
 
@@ -27,15 +28,15 @@ namespace NodaTime.TimeZones
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PrecalculatedDateTimeZone"/> class.
-        /// This is only visible to make testing simpler.
         /// </summary>
         /// <param name="id">The id.</param>
         /// <param name="periods">The periods.</param>
         /// <param name="tailZone">The tail zone.</param>
+        [VisibleForTesting]
         internal PrecalculatedDateTimeZone(string id, ZoneInterval[] periods, DateTimeZone tailZone)
             : base(id, false,
-                   ComputeOffset(periods, p => p.WallOffset, tailZone, Offset.Min),
-                   ComputeOffset(periods, p => p.WallOffset, tailZone, Offset.Max))
+                   ComputeOffset(periods, tailZone, Offset.Min),
+                   ComputeOffset(periods, tailZone, Offset.Max))
         {
             this.tailZone = tailZone;
             this.periods = periods;
@@ -181,107 +182,25 @@ namespace NodaTime.TimeZones
             var tailZone = reader.ReadByte() == 1 ? DaylightSavingsDateTimeZone.Read(reader, id + "-tail") : null;
             return new PrecalculatedDateTimeZone(id, periods, tailZone);
         }
-
-        /// <summary>
-        /// Writes the time zone to the specified writer.
-        /// </summary>
-        /// <param name="writer">The writer to write to.</param>
-        internal void WriteLegacy(LegacyDateTimeZoneWriter writer)
-        {
-            Preconditions.CheckNotNull(writer, "writer");
-
-            // Keep a pool of strings; we don't want to write the same strings out time and time again.
-            List<string> stringPool = new List<string>();
-            foreach (var period in periods)
-            {
-                string name = period.Name;
-                if (!stringPool.Contains(name))
-                {
-                    stringPool.Add(name);
-                }
-            }
-            writer.WriteCount(stringPool.Count);
-            foreach (string name in stringPool)
-            {
-                writer.WriteString(name);
-            }
-
-            writer.WriteCount(periods.Length);
-            Instant? previous = null;
-            foreach (var period in periods)
-            {
-                writer.WriteZoneIntervalTransition(previous, (Instant) (previous = period.Start));
-                int nameIndex = stringPool.IndexOf(period.Name);
-                if (stringPool.Count < 256)
-                {
-                    writer.WriteByte((byte)nameIndex);
-                }
-                else
-                {
-                    writer.WriteInt32(nameIndex);
-                }
-                writer.WriteOffset(period.WallOffset);
-                writer.WriteOffset(period.Savings);
-            }
-            writer.WriteZoneIntervalTransition(previous, tailZoneStart);
-            writer.WriteTimeZone(tailZone);
-        }
-
-        /// <summary>
-        /// Reads a time zone from the specified reader.
-        /// </summary>
-        /// <param name="reader">The reader.</param>
-        /// <param name="id">The id.</param>
-        /// <returns>The time zone.</returns>
-        public static DateTimeZone ReadLegacy(LegacyDateTimeZoneReader reader, string id)
-        {
-            string[] stringPool = new string[reader.ReadCount()];
-            for (int i = 0; i < stringPool.Length; i++)
-            {
-                stringPool[i] = reader.ReadString();
-            }
-
-            int size = reader.ReadCount();
-            var periods = new ZoneInterval[size];
-            var start = reader.ReadZoneIntervalTransition(null);
-            for (int i = 0; i < size; i++)
-            {
-                int nameIndex = stringPool.Length < 256 ? reader.ReadByte() : reader.ReadInt32();
-                var name = stringPool[nameIndex];
-                var offset = reader.ReadOffset();
-                var savings = reader.ReadOffset();
-                var nextStart = reader.ReadZoneIntervalTransition(start);
-                periods[i] = new ZoneInterval(name, start, nextStart, offset, savings);
-                start = nextStart;
-            }
-            var tailZone = reader.ReadTimeZone(id + "-tail");
-            return new PrecalculatedDateTimeZone(id, periods, tailZone);
-        }
         #endregion // I/O
 
         #region Offset computation for constructors
         // Essentially Func<Offset, Offset, Offset>
         private delegate Offset OffsetAggregator(Offset x, Offset y);
-        private delegate Offset OffsetExtractor<T>(T input);
+        private delegate Offset OffsetExtractor<in T>(T input);
 
         // Reasonably simple way of computing the maximum/minimum offset
         // from either periods or transitions, with or without a tail zone.
-        private static Offset ComputeOffset<T>(IEnumerable<T> elements,
-            OffsetExtractor<T> extractor,
+        private static Offset ComputeOffset(ZoneInterval[] intervals,
             DateTimeZone tailZone,
             OffsetAggregator aggregator)
         {
-            Preconditions.CheckNotNull(elements, "elements");
-            Offset ret;
-            using (var iterator = elements.GetEnumerator())
+            Preconditions.CheckNotNull(intervals, "intervals");
+            Preconditions.CheckArgument(intervals.Length > 0, "intervals", "No intervals specified");
+            Offset ret = intervals[0].WallOffset;
+            for (int i = 1; i < intervals.Length; i++)
             {
-                var hasFirst = iterator.MoveNext();
-                Preconditions.CheckArgument(hasFirst, "iterator", "No transitions / periods specified");
-                ret = extractor(iterator.Current);
-                while (iterator.MoveNext())
-                {
-                    ret = aggregator(ret, extractor(iterator.Current));
-                }
+                ret = aggregator(ret, intervals[i].WallOffset);
             }
             if (tailZone != null)
             {
@@ -302,7 +221,7 @@ namespace NodaTime.TimeZones
             if (Id != otherZone.Id ||
                 !Equals(tailZone, otherZone.tailZone) ||
                 tailZoneStart != otherZone.tailZoneStart ||
-                !object.Equals(firstTailZoneInterval, otherZone.firstTailZoneInterval))
+                !Equals(firstTailZoneInterval, otherZone.firstTailZoneInterval))
             {
                 return false;
             }

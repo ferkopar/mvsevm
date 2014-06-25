@@ -6,7 +6,7 @@ using NodaTime.Utility;
 
 namespace NodaTime.Calendars
 {
-    internal abstract class GJYearMonthDayCalculator : YearMonthDayCalculator
+    internal abstract class GJYearMonthDayCalculator : RegularYearMonthDayCalculator
     {
         // These arrays are NOT public. We trust ourselves not to alter the array.
         // They use zero-based array indexes so the that valid range of months is
@@ -33,11 +33,11 @@ namespace NodaTime.Calendars
         }
 
         protected GJYearMonthDayCalculator(int minYear, int maxYear, long averageTicksPerYear, long ticksAtStartOfYear1)
-            : base(minYear, maxYear, 12, 365 * NodaConstants.TicksPerStandardDay, averageTicksPerYear, ticksAtStartOfYear1, new[] { Era.BeforeCommon, Era.Common })
+            : base(minYear, maxYear, 12, averageTicksPerYear, ticksAtStartOfYear1, Era.BeforeCommon, Era.Common)
         {
         }
 
-        protected internal override int GetMonthOfYear(LocalInstant localInstant, int year)
+        protected override int GetMonthOfYear(LocalInstant localInstant, int year)
         {
             // Perform a binary search to get the month. To make it go even faster,
             // compare using ints instead of longs. The number of ticks per
@@ -46,7 +46,7 @@ namespace NodaTime.Calendars
             // ticks per day contains 1024 * 10000 as a factor. After the division,
             // the instant isn't measured in ticks, but in units of
             // (128/125) seconds.
-            int i = (int)((((localInstant.Ticks - GetYearTicks(year))) >> 10) / NodaConstants.TicksPerMillisecond);
+            int i = (int)((((localInstant.Ticks - GetStartOfYearInTicks(year))) >> 10) / NodaConstants.TicksPerMillisecond);
 
             return (IsLeapYear(year))
                        ? ((i < 182 * 84375)
@@ -64,11 +64,6 @@ namespace NodaTime.Calendars
         internal override int GetDaysInMonth(int year, int month)
         {
             return IsLeapYear(year) ? MaxDaysPerMonth[month - 1] : MinDaysPerMonth[month - 1];
-        }
-
-        internal override int GetDaysInMonthMax(int month)
-        {
-            return MaxDaysPerMonth[month - 1];
         }
 
         protected override long GetTicksFromStartOfYearToStartOfMonth(int year, int month)

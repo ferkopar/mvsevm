@@ -10,7 +10,6 @@ using System.Text;
 using NodaTime.Globalization;
 using NodaTime.Properties;
 using NodaTime.Text.Patterns;
-using NodaTime.Utility;
 
 namespace NodaTime.Text
 {
@@ -69,7 +68,7 @@ namespace NodaTime.Text
             return ParsePartialPattern(patternText, formatInfo);
         }
 
-        internal IPartialPattern<Offset> ParsePartialPattern(string patternText, NodaFormatInfo formatInfo)
+        private IPartialPattern<Offset> ParsePartialPattern(string patternText, NodaFormatInfo formatInfo)
         {
             // Nullity check is performed in OffsetPattern.
             if (patternText.Length == 0)
@@ -142,7 +141,7 @@ namespace NodaTime.Text
             {
                 patterns.Add(ParsePartialPattern(c.ToString(), formatInfo));
             }
-            NodaFunc<Offset, IPartialPattern<Offset>> formatter = value => PickGeneralFormatter(value, patterns);
+            Func<Offset, IPartialPattern<Offset>> formatter = value => PickGeneralFormatter(value, patterns);
             return new CompositePattern<Offset>(patterns, formatter);
         }
 
@@ -230,6 +229,7 @@ namespace NodaTime.Text
 
             public ParseResult<Offset> ParsePartial(ValueCursor cursor)
             {
+                int startIndex = cursor.Index;
                 // TODO: Do better than this. It's horrible, and may well be invalid
                 // for some cultures. Or just remove the NumberPattern from 2.0...
                 int longestPossible = Math.Min(maxLength, cursor.Length - cursor.Index);
@@ -243,13 +243,15 @@ namespace NodaTime.Text
                         if (milliseconds < -NodaConstants.MillisecondsPerStandardDay ||
                             NodaConstants.MillisecondsPerStandardDay < milliseconds)
                         {
-                            return ParseResult<Offset>.ValueOutOfRange(milliseconds);
+                            cursor.Move(startIndex);
+                            return ParseResult<Offset>.ValueOutOfRange(cursor, milliseconds);
                         }
                         cursor.Move(cursor.Index + length);
                         return ParseResult<Offset>.ForValue(Offset.FromMilliseconds(milliseconds));
                     }
                 }
-                return ParseResult<Offset>.CannotParseValue(cursor.Value, "n");
+                cursor.Move(startIndex);
+                return ParseResult<Offset>.CannotParseValue(cursor, "n");
             }
 
             public void FormatPartial(Offset value, StringBuilder builder)
@@ -266,11 +268,11 @@ namespace NodaTime.Text
                     if (milliseconds < -NodaConstants.MillisecondsPerStandardDay ||
                         NodaConstants.MillisecondsPerStandardDay < milliseconds)
                     {
-                        return ParseResult<Offset>.ValueOutOfRange(milliseconds);
+                        return ParseResult<Offset>.ValueOutOfRange(new ValueCursor(text), milliseconds);
                     }
                     return ParseResult<Offset>.ForValue(Offset.FromMilliseconds(milliseconds));
                 }
-                return ParseResult<Offset>.CannotParseValue(text, "n");
+                return ParseResult<Offset>.CannotParseValue(new ValueCursor(text), "n");
             }
 
             public string Format(Offset value)
@@ -297,7 +299,7 @@ namespace NodaTime.Text
         /// Provides a container for the interim parsed pieces of an <see cref="Offset" /> value.
         /// </summary>
         [DebuggerStepThrough]
-        internal sealed class OffsetParseBucket : ParseBucket<Offset>
+        private sealed class OffsetParseBucket : ParseBucket<Offset>
         {
             /// <summary>
             /// The hours in the range [0, 23].
@@ -330,7 +332,7 @@ namespace NodaTime.Text
             /// <summary>
             /// Calculates the value from the parsed pieces.
             /// </summary>
-            internal override ParseResult<Offset> CalculateValue(PatternFields usedFields)
+            internal override ParseResult<Offset> CalculateValue(PatternFields usedFields, string text)
             {
                 int milliseconds = Hours * NodaConstants.MillisecondsPerHour +
                     Minutes * NodaConstants.MillisecondsPerMinute +

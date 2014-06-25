@@ -1,4 +1,4 @@
-// Copyright 2010 The Noda Time Authors. All rights reserved.
+﻿// Copyright 2010 The Noda Time Authors. All rights reserved.
 // Use of this source code is governed by the Apache License 2.0,
 // as found in the LICENSE.txt file.
 
@@ -6,13 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using JetBrains.Annotations;
+using NodaTime.Annotations;
 using NodaTime.Calendars;
 using NodaTime.Fields;
 using NodaTime.Utility;
-
-namespace NodaTime.Fields
-{
-}
 
 namespace NodaTime
 {
@@ -37,9 +35,10 @@ namespace NodaTime
     /// </para>
     /// </remarks>
     /// <threadsafety>
-    /// All calendar implementations within Noda Time are immutable and thread-safe. See the thread safety
+    /// All calendar implementations are immutable and thread-safe. See the thread safety
     /// section of the user guide for more information.
     /// </threadsafety>
+    [Immutable]
     public sealed class CalendarSystem
     {
         // TODO(2.0): Consider moving the static accessors into a separate class. As we get more calendars,
@@ -51,16 +50,26 @@ namespace NodaTime
         private const string CopticName = "Coptic";
         private const string JulianName = "Julian";
         private const string IslamicName = "Hijri";
+        private const string PersianName = "Persian";
+        private const string HebrewName = "Hebrew";
 
         private static readonly CalendarSystem[] GregorianCalendarSystems;
         private static readonly CalendarSystem[] CopticCalendarSystems;
         private static readonly CalendarSystem[] JulianCalendarSystems;
         private static readonly CalendarSystem[,] IslamicCalendarSystems;
         private static readonly CalendarSystem IsoCalendarSystem;
+        private static readonly CalendarSystem PersianCalendarSystem;
+        private static readonly CalendarSystem[] HebrewCalendarSystems;
 
         static CalendarSystem()
         {
             IsoCalendarSystem = new CalendarSystem(IsoName, IsoName, new IsoYearMonthDayCalculator(), 4);
+            PersianCalendarSystem = new CalendarSystem(PersianName, PersianName, new PersianYearMonthDayCalculator(), 4);
+            HebrewCalendarSystems = new[]
+            {
+                new CalendarSystem(HebrewName, HebrewName, new HebrewYearMonthDayCalculator(HebrewMonthNumbering.Civil), 4),
+                new CalendarSystem(HebrewName, HebrewName, new HebrewYearMonthDayCalculator(HebrewMonthNumbering.Scriptural), 4)
+            };
 
             // Variations for the calendar systems which have different objects for different "minimum first day of week"
             // values. We create a new year/month/day calculator for each instance, but there's no actual state - it's
@@ -115,10 +124,13 @@ namespace NodaTime
         private static readonly Dictionary<string, Func<CalendarSystem>> IdToFactoryMap = new Dictionary<string, Func<CalendarSystem>>
         {
             { "ISO", () => Iso },
+            { "Persian", GetPersianCalendar },
+            { "Hebrew-Civil", () => GetHebrewCalendar(HebrewMonthNumbering.Civil) },
+            { "Hebrew-Scriptural", () => GetHebrewCalendar(HebrewMonthNumbering.Scriptural) },
             { "Gregorian 1", () => GetGregorianCalendar(1) },
             { "Gregorian 2", () => GetGregorianCalendar(2) },
             { "Gregorian 3", () => GetGregorianCalendar(3) },
-            { "Gregorian 4", () => GetGregorianCalendar(4) }, 
+            { "Gregorian 4", () => GetGregorianCalendar(4) },
             { "Gregorian 5", () => GetGregorianCalendar(5) },
             { "Gregorian 6", () => GetGregorianCalendar(6) },
             { "Gregorian 7", () => GetGregorianCalendar(7) },
@@ -163,6 +175,48 @@ namespace NodaTime
         /// </para>
         /// </remarks>
         public static CalendarSystem Iso { get { return IsoCalendarSystem; } }
+
+        /// <summary>
+        /// Returns a Persian (also known as Solar Hijri) calendar system. This is the main calendar in Iran
+        /// and Afghanistan, and is also used in some other countries where Persian is spoken.
+        /// </summary>
+        /// <remarks>
+        /// The true Persian calendar is an astronomical one, where leap years depend on vernal equinox.
+        /// A complicated algorithmic alternative approach exists, proposed by Ahmad Birashk,
+        /// but this isn't generally used in society. The implementation here is somewhat simpler, using a
+        /// 33-year leap cycle, where years  1, 5, 9, 13, 17, 22, 26, and 30 in each cycle are leap years.
+        /// This is the same approach taken by the BCL <c>PersianCalendar</c> class, and the dates of
+        /// this implementation align exactly with the BCL implementation.
+        /// </remarks>
+        /// <returns>A Persian calendar system.</returns>
+        public static CalendarSystem GetPersianCalendar()
+        {
+            // Note: this is a method rather than a property as we may wish to overload it to allow a choice
+            // of other Persian calendars in the future and for consistency.
+            return PersianCalendarSystem;
+        }
+
+        /// <summary>
+        /// Returns a Hebrew calendar, as described at http://en.wikipedia.org/wiki/Hebrew_calendar. This is a
+        /// purely mathematical calculator, applied proleptically to the period where the real calendar was observational. 
+        /// </summary>
+        /// <remarks>
+        /// <para>Please note that in version 1.3.0 of Noda Time, support for the Hebrew calendar is somewhat experimental,
+        /// particularly in terms of calculations involving adding or subtracting years. Additionally, text formatting
+        /// and parsing using month names is not currently supported, due to the challenges of handling leap months.
+        /// It is hoped that this will be improved in future versions.</para>
+        /// <para>The implementation for this was taken from http://www.cs.tau.ac.il/~nachum/calendar-book/papers/calendar.ps,
+        /// which is a public domain algorithm presumably equivalent to that given in the Calendrical Calculations book
+        /// by the same authors (Nachum Dershowitz and Edward Reingold).
+        /// </para>
+        /// </remarks>
+        /// <param name="monthNumbering">The month numbering system to use</param>
+        /// <returns>A Hebrew calendar system for the given month numbering.</returns>
+        public static CalendarSystem GetHebrewCalendar(HebrewMonthNumbering monthNumbering)
+        {
+            Preconditions.CheckArgumentRange("monthNumbering", (int) monthNumbering, 1, 2);
+            return HebrewCalendarSystems[((int) monthNumbering) - 1];
+        }
 
         /// <summary>
         /// Returns a pure proleptic Gregorian calendar system, which defines every
@@ -304,7 +358,6 @@ namespace NodaTime
 
         private readonly YearMonthDayCalculator yearMonthDayCalculator;
         private readonly WeekYearCalculator weekYearCalculator;
-        private readonly PeriodFieldSet periodFields;
         private readonly string id;
         private readonly string name;
         private readonly IList<Era> eras;
@@ -312,7 +365,7 @@ namespace NodaTime
         private readonly int maxYear;
         private readonly long minTicks;
         private readonly long maxTicks;
-      
+
         private CalendarSystem(string name, YearMonthDayCalculator yearMonthDayCalculator, int minDaysInFirstWeek)
             : this(CreateIdFromNameAndMinDaysInFirstWeek(name, minDaysInFirstWeek), name, yearMonthDayCalculator, minDaysInFirstWeek)
         {
@@ -333,18 +386,11 @@ namespace NodaTime
             this.name = name;
             this.yearMonthDayCalculator = yearMonthDayCalculator;
             this.weekYearCalculator = new WeekYearCalculator(yearMonthDayCalculator, minDaysInFirstWeek);
-            this.minYear = yearMonthDayCalculator.MinYear;                   
+            this.minYear = yearMonthDayCalculator.MinYear;
             this.maxYear = yearMonthDayCalculator.MaxYear;
-            this.minTicks = yearMonthDayCalculator.GetYearTicks(minYear);
-            this.maxTicks = yearMonthDayCalculator.GetYearTicksSafe(maxYear + 1) - 1;
-            this.eras = new ReadOnlyCollection<Era>(new List<Era>(yearMonthDayCalculator.Eras));
-            this.periodFields = new PeriodFieldSet.Builder(TimeOfDayCalculator.TimeFields)
-            {
-                Days = FixedDurationPeriodField.Days,
-                Weeks = FixedDurationPeriodField.Weeks,
-                Months = new MonthsPeriodField(yearMonthDayCalculator),
-                Years = new YearsPeriodField(yearMonthDayCalculator)
-            }.Build();
+            this.minTicks = yearMonthDayCalculator.GetStartOfYearInTicks(minYear);
+            this.maxTicks = yearMonthDayCalculator.GetStartOfYearInTicks(maxYear + 1) - 1;
+            this.eras = new ReadOnlyCollection<Era>(yearMonthDayCalculator.Eras);
         }
 
         /// <summary>
@@ -393,6 +439,8 @@ namespace NodaTime
         ///   <item><term>Hijri Astronomical-Base15</term><description><see cref="CalendarSystem.GetIslamicCalendar"/>(IslamicLeapYearPattern.Base15, IslamicEpoch.Astronomical)</description></item>
         ///   <item><term>Hijri Astronomical-Base16</term><description><see cref="CalendarSystem.GetIslamicCalendar"/>(IslamicLeapYearPattern.Base16, IslamicEpoch.Astronomical)</description></item>
         ///   <item><term>Hijri Astronomical-HabashAlHasib</term><description><see cref="CalendarSystem.GetIslamicCalendar"/>(IslamicLeapYearPattern.HabashAlHasib, IslamicEpoch.Astronomical)</description></item>
+        ///   <item><term>Persian</term><description><see cref="CalendarSystem.GetPersianCalendar"/></description></item>
+        ///   <item><term>Hebrew</term><description><see cref="CalendarSystem.GetHebrewCalendar"/></description></item>
         /// </list>
         /// </remarks>
         public string Id { get { return id; } }
@@ -451,10 +499,9 @@ namespace NodaTime
         /// <param name="yearOfEra">The year within the era.</param>
         /// <param name="era">The era in which to consider the year</param>
         /// <returns>The absolute year represented by the specified year of era.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="era"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="yearOfEra"/> is out of the range of years for the given era.</exception>
         /// <exception cref="ArgumentException"><paramref name="era"/> is not an era used in this calendar.</exception>
-        public int GetAbsoluteYear(int yearOfEra, Era era)
+        public int GetAbsoluteYear(int yearOfEra, [NotNull] Era era)
         {
             return GetAbsoluteYear(yearOfEra, GetEraIndex(era));
         }
@@ -464,9 +511,8 @@ namespace NodaTime
         /// </summary>
         /// <param name="era">The era in which to find the greatest year</param>
         /// <returns>The maximum valid year in the given era.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="era"/> is null.</exception>
         /// <exception cref="ArgumentException"><paramref name="era"/> is not an era used in this calendar.</exception>
-        public int GetMaxYearOfEra(Era era)
+        public int GetMaxYearOfEra([NotNull] Era era)
         {
             return GetMaxYearOfEra(GetEraIndex(era));
         }
@@ -476,9 +522,8 @@ namespace NodaTime
         /// </summary>
         /// <param name="era">The era in which to find the greatest year</param>
         /// <returns>The minimum valid year in the given eraera.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="era"/> is null.</exception>
         /// <exception cref="ArgumentException"><paramref name="era"/> is not an era used in this calendar.</exception>
-        public int GetMinYearOfEra(Era era)
+        public int GetMinYearOfEra([NotNull] Era era)
         {
             return GetMinYearOfEra(GetEraIndex(era));
         }
@@ -496,7 +541,7 @@ namespace NodaTime
         }
         #endregion
 
-        internal PeriodFieldSet PeriodFields { get { return periodFields; } }
+        internal YearMonthDayCalculator YearMonthDayCalculator { get { return yearMonthDayCalculator; } }
 
         #region Factory methods for creating a LocalInstant from components
         internal LocalInstant GetLocalInstant(int year, int monthOfYear, int dayOfMonth, int hourOfDay, int minuteOfHour, int secondOfMinute)
@@ -512,7 +557,7 @@ namespace NodaTime
             long timeTicks = TimeOfDayCalculator.GetTicks(hourOfDay, minuteOfHour);
             return date.PlusTicks(timeTicks);
         }
-        
+
         /// <summary>
         /// Returns the local date corresponding to the given "week year", "week of week year", and "day of week"
         /// in this calendar system.
@@ -534,18 +579,17 @@ namespace NodaTime
         /// <param name="yearOfEra">Year of era to use</param>
         /// <param name="monthOfYear">Month to use</param>
         /// <param name="dayOfMonth">Day of month to use</param>
-        /// <exception cref="ArgumentNullException"><paramref name="era" />is null.</exception>
         /// <exception cref="ArgumentException"><paramref name="era"/> is not an era used in this calendar.</exception>
         /// <exception cref="ArgumentOutOfRangeException">The year of era, month of year and day of month values don't
         /// form a valid date.</exception>
         /// <returns>A <see cref="LocalInstant"/> with the given year, month, day and era.</returns>
-        internal LocalInstant GetLocalInstant(Era era, int yearOfEra, int monthOfYear, int dayOfMonth)
+        internal LocalInstant GetLocalInstant([NotNull] Era era, int yearOfEra, int monthOfYear, int dayOfMonth)
         {
             return yearMonthDayCalculator.GetLocalInstant(era, yearOfEra, monthOfYear, dayOfMonth);
         }
 
         /// <summary>
-        /// Returns a local instant, formed from the given year, month, day, 
+        /// Returns a local instant, formed from the given year, month, day,
         /// hour, minute, second, millisecond and ticks values.
         /// </summary>
         /// <param name="year">Absolute year (not year within era; may be negative)</param>
@@ -629,7 +673,7 @@ namespace NodaTime
         /// <returns>The maximum month number within the given year.</returns>
         public int GetMaxMonth(int year)
         {
-            return yearMonthDayCalculator.MonthsInYear;
+            return yearMonthDayCalculator.GetMaxMonth(year);
         }
 
         /// <summary>

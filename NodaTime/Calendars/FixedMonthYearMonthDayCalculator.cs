@@ -2,8 +2,8 @@
 // Use of this source code is governed by the Apache License 2.0,
 // as found in the LICENSE.txt file.
 
-using NodaTime.Utility;
 using System.Collections.Generic;
+using NodaTime.Utility;
 
 namespace NodaTime.Calendars
 {
@@ -15,19 +15,18 @@ namespace NodaTime.Calendars
     /// This implementation assumes any additional days after twelve
     /// months fall into a thirteenth month.
     /// </remarks>
-    internal abstract class FixedMonthYearMonthDayCalculator : YearMonthDayCalculator
+    internal abstract class FixedMonthYearMonthDayCalculator : RegularYearMonthDayCalculator
     {
         private const int DaysInMonth = 30;
 
         // Number of ticks in all but the "short" month.
         private const long TicksPerMonth = DaysInMonth * NodaConstants.TicksPerStandardDay;
 
-        protected const long AverageTicksPerYear = (long)(365.25 * NodaConstants.TicksPerStandardDay);
+        private const long AverageTicksPerYear = (long)(365.25 * NodaConstants.TicksPerStandardDay);
 
         protected FixedMonthYearMonthDayCalculator(int minYear, int maxYear,
-            long ticksAtStartOfYear1, IList<Era> eras)
-            : base(minYear, maxYear, 13, 365 * NodaConstants.TicksPerStandardDay, AverageTicksPerYear,
-                   ticksAtStartOfYear1, eras)
+            long ticksAtStartOfYear1, params Era[] eras)
+            : base(minYear, maxYear, 13, AverageTicksPerYear, ticksAtStartOfYear1, eras)
         {
         }
 
@@ -48,7 +47,7 @@ namespace NodaTime.Calendars
                 }
             }
 
-            long ticks = GetYearTicks(year) + (dayOfYear - 1) * NodaConstants.TicksPerStandardDay + tickOfDay;
+            long ticks = GetStartOfYearInTicks(year) + (dayOfYear - 1) * NodaConstants.TicksPerStandardDay + tickOfDay;
             return new LocalInstant(ticks);
         }
 
@@ -59,8 +58,8 @@ namespace NodaTime.Calendars
             Preconditions.CheckArgumentRange("dayOfMonth", dayOfMonth, 1, GetDaysInMonth(year, monthOfYear));
 
             // Just inline the arithmetic that would be done via various methods.
-            long ticks = GetYearTicks(year) + (monthOfYear - 1) * TicksPerMonth + (dayOfMonth - 1) * NodaConstants.TicksPerStandardDay;
-            return new LocalInstant(ticks);
+            int days = GetStartOfYearInDays(year) + (monthOfYear - 1) * DaysInMonth + (dayOfMonth - 1);
+            return new LocalInstant(days * NodaConstants.TicksPerStandardDay);
         }
         
         protected override long GetTicksFromStartOfYearToStartOfMonth(int year, int month)
@@ -84,19 +83,14 @@ namespace NodaTime.Calendars
             return month != 13 ? DaysInMonth : IsLeapYear(year) ? 6 : 5;
         }
 
-        internal override int GetDaysInMonthMax(int month)
-        {
-            return month != 13 ? DaysInMonth : 6;
-        }
-
         internal override int GetMonthOfYear(LocalInstant localInstant)
         {
             return (GetDayOfYear(localInstant) - 1) / DaysInMonth + 1;
         }
 
-        protected internal override int GetMonthOfYear(LocalInstant localInstant, int year)
+        protected override int GetMonthOfYear(LocalInstant localInstant, int year)
         {
-            long monthZeroBased = (localInstant.Ticks - GetYearTicks(year)) / TicksPerMonth;
+            long monthZeroBased = (localInstant.Ticks - GetStartOfYearInTicks(year)) / TicksPerMonth;
             return ((int)monthZeroBased) + 1;
         }
     }

@@ -2,17 +2,18 @@
 // Use of this source code is governed by the Apache License 2.0,
 // as found in the LICENSE.txt file.
 
-using NodaTime.TimeZones.Cldr;
-using NodaTime.Utility;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using NodaTime.TimeZones.Cldr;
+using NodaTime.Utility;
 
 namespace NodaTime.TimeZones.IO
 {
     internal sealed class TzdbStreamData : ITzdbDataSource
     {
-        private static readonly Dictionary<TzdbStreamFieldId, NodaAction<Builder, TzdbStreamField>> FieldHanders =
-            new Dictionary<TzdbStreamFieldId, NodaAction<Builder, TzdbStreamField>>
+        private static readonly Dictionary<TzdbStreamFieldId, Action<Builder, TzdbStreamField>> FieldHanders =
+            new Dictionary<TzdbStreamFieldId, Action<Builder, TzdbStreamField>>
         {
             { TzdbStreamFieldId.StringPool, (builder, field) => builder.HandleStringPoolField(field) },
             { TzdbStreamFieldId.TimeZone, (builder, field) => builder.HandleZoneField(field) },
@@ -110,7 +111,7 @@ namespace NodaTime.TimeZones.IO
             foreach (var field in TzdbStreamField.ReadFields(stream))
             {
                 // Only handle fields we know about
-                NodaAction<Builder, TzdbStreamField> handler;
+                Action<Builder, TzdbStreamField> handler;
                 if (FieldHanders.TryGetValue(field.Id, out handler))
                 {
                     handler(builder, field);

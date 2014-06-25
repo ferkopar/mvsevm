@@ -2,10 +2,11 @@
 // Use of this source code is governed by the Apache License 2.0,
 // as found in the LICENSE.txt file.
 
+using System.Globalization;
+using NodaTime.Annotations;
 using NodaTime.Globalization;
 using NodaTime.Text.Patterns;
 using NodaTime.Utility;
-using System.Globalization;
 
 namespace NodaTime.Text
 {
@@ -17,6 +18,7 @@ namespace NodaTime.Text
     /// may be shared freely between threads. We recommend only using read-only cultures for patterns, although this is
     /// not currently enforced.
     /// </threadsafety>
+    [Immutable] // Well, assuming an immutable culture...
     public sealed class DurationPattern : IPattern<Duration>
     {
         /// <summary>
@@ -28,7 +30,7 @@ namespace NodaTime.Text
         internal static readonly PatternBclSupport<Duration> BclSupport = new PatternBclSupport<Duration>("o", fi => fi.DurationPatternParser);
 
         // Nested class for ease of type initialization
-        internal class Patterns
+        internal static class Patterns
         {
             internal static readonly DurationPattern RoundtripPatternImpl = CreateWithInvariantCulture("-D:hh:mm:ss.FFFFFFF");
         }
@@ -85,7 +87,7 @@ namespace NodaTime.Text
         /// <param name="formatInfo">Localization information</param>
         /// <returns>A pattern for parsing and formatting offsets.</returns>
         /// <exception cref="InvalidPatternException">The pattern text was invalid.</exception>
-        internal static DurationPattern Create(string patternText, NodaFormatInfo formatInfo)
+        private static DurationPattern Create(string patternText, NodaFormatInfo formatInfo)
         {
             Preconditions.CheckNotNull(patternText, "patternText");
             Preconditions.CheckNotNull(formatInfo, "formatInfo");

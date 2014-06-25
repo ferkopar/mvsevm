@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Threading;
+using JetBrains.Annotations;
 using NodaTime.Calendars;
 using NodaTime.Properties;
 using NodaTime.Text;
@@ -194,7 +195,7 @@ namespace NodaTime.Globalization
         internal FixedFormatInfoPatternParser<ZonedDateTime> ZonedDateTimePatternParser { get { return EnsureFixedFormatInitialized(ref zonedDateTimePatternParser, () => new ZonedDateTimePatternParser(ZonedDateTimePattern.DefaultTemplateValue, Resolvers.StrictResolver, null)); } }
 
         private FixedFormatInfoPatternParser<T> EnsureFixedFormatInitialized<T>(ref FixedFormatInfoPatternParser<T> field,
-            NodaFunc<IPatternParser<T>> patternParserFactory)
+            Func<IPatternParser<T>> patternParserFactory)
         {
             lock (fieldLock)
             {
@@ -262,11 +263,6 @@ namespace NodaTime.Globalization
         public DateTimeFormatInfo DateTimeFormat { get { return cultureInfo.DateTimeFormat; } }
 
         /// <summary>
-        /// Gets the decimal separator from the number format associated with this provider.
-        /// </summary>
-        public string DecimalSeparator { get { return NumberFormat.NumberDecimalSeparator; } }
-
-        /// <summary>
         ///   Gets the positive sign.
         /// </summary>
         public string PositiveSign { get { return NumberFormat.PositiveSign; } }
@@ -313,8 +309,7 @@ namespace NodaTime.Globalization
         /// <param name="era">The era to find the names of.</param>
         /// <returns>A read-only list of names for the given era, or an empty list if
         /// the era is not known in this culture.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="era"/> is null.</exception>
-        public IList<string> GetEraNames(Era era)
+        public IList<string> GetEraNames([NotNull] Era era)
         {
             Preconditions.CheckNotNull(era, "era");
             return GetEraDescription(era).AllNames;
@@ -325,8 +320,7 @@ namespace NodaTime.Globalization
         /// </summary>
         /// <param name="era">The era to find the primary name of.</param>
         /// <returns>The primary name for the given era, or an empty string if the era name is not known.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="era"/> is null.</exception>
-        public string GetEraPrimaryName(Era era)
+        public string GetEraPrimaryName([NotNull] Era era)
         {
             Preconditions.CheckNotNull(era, "era");
             return GetEraDescription(era).PrimaryName;
@@ -372,7 +366,7 @@ namespace NodaTime.Globalization
         /// <summary>
         /// Gets the <see cref="Offset" /> "S" pattern.
         /// </summary>
-        public string OffsetPatternShort { get { return PatternResources.ResourceManager.GetString("OffsetPatternShort", cultureInfo); ; } }
+        public string OffsetPatternShort { get { return PatternResources.ResourceManager.GetString("OffsetPatternShort", cultureInfo); } }
 
         /// <summary>
         /// Clears the cache. Only used for test purposes.

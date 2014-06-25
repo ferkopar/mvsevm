@@ -2,10 +2,11 @@
 // Use of this source code is governed by the Apache License 2.0,
 // as found in the LICENSE.txt file.
 
-using NodaTime.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using NodaTime.Annotations;
+using NodaTime.Utility;
 
 namespace NodaTime.TimeZones
 {
@@ -19,6 +20,7 @@ namespace NodaTime.TimeZones
     /// <see cref="ZoneInterval"/> within the two time zones. This behaviour can be changed using the
     /// <see cref="WithOptions"/> method.
     /// </remarks>
+    [Immutable]
     public sealed class ZoneEqualityComparer : IEqualityComparer<DateTimeZone>
     {
         /// <summary>
@@ -109,12 +111,15 @@ namespace NodaTime.TimeZones
         private readonly Options options;
 
         /// <summary>
-        /// Returns the interval over which this comparer operates; visible for testing.
+        /// Returns the interval over which this comparer operates.
         /// </summary>
+        [VisibleForTesting]
         internal Interval IntervalForTest { get { return interval; } }
+
         /// <summary>
-        /// Returns the options used by this comparer; visible for testing.
+        /// Returns the options used by this comparer.
         /// </summary>
+        [VisibleForTesting]
         internal Options OptionsForTest { get { return options; } }
 
         private readonly ZoneIntervalEqualityComparer zoneIntervalComparer;

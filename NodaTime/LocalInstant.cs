@@ -3,6 +3,7 @@
 // as found in the LICENSE.txt file.
 
 using System;
+using JetBrains.Annotations;
 using NodaTime.Text;
 using NodaTime.Utility;
 
@@ -54,6 +55,7 @@ namespace NodaTime
         /// you to construct a <see cref="DateTimeOffset"/> with an arbitrary offset, which makes it as close to
         /// the Noda Time non-system-specific "local" concept as exists in .NET.
         /// </remarks>
+        [Pure]
         public DateTime ToDateTimeUnspecified()
         {
             return new DateTime(ticks - NodaConstants.BclEpoch.Ticks, DateTimeKind.Unspecified);
@@ -94,7 +96,7 @@ namespace NodaTime
         /// </summary>
         public static Duration operator -(LocalInstant left, LocalInstant right)
         {
-            return new Duration(left.Ticks - right.Ticks);
+            return Duration.FromTicks(left.Ticks - right.Ticks);
         }
 
         /// <summary>
@@ -109,7 +111,7 @@ namespace NodaTime
         /// <returns>A new <see cref="Instant"/> representing the difference of the given values.</returns>
         public Instant Minus(Offset offset)
         {
-            return new Instant(Ticks - offset.Ticks);
+            return Instant.FromTicksSinceUnixEpoch(Ticks - offset.Ticks);
         }
 
         /// <summary>
@@ -213,6 +215,7 @@ namespace NodaTime
         /// Convenience method to add the given number of ticks. Useful
         /// for assembling date and time parts.
         /// </summary>
+        [Pure]
         internal LocalInstant PlusTicks(long ticksToAdd)
         {
             return new LocalInstant(Ticks + ticksToAdd);
@@ -310,7 +313,7 @@ namespace NodaTime
         /// </returns>
         public override string ToString()
         {
-            var pattern = LocalDateTimePattern.CreateWithInvariantCulture("r-MM-ddTHH:mm:ss LOC");
+            var pattern = LocalDateTimePattern.CreateWithInvariantCulture("yyyy-MM-ddTHH:mm:ss LOC");
             var utc = new LocalDateTime(new LocalInstant(Ticks));
             return pattern.Format(utc);
         }

@@ -2,14 +2,15 @@
 // Use of this source code is governed by the Apache License 2.0,
 // as found in the LICENSE.txt file.
 
-using NodaTime.Text;
-using NodaTime.Utility;
 using System;
 using System.Globalization;
 using System.Runtime.Serialization;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
+using JetBrains.Annotations;
+using NodaTime.Text;
+using NodaTime.Utility;
 
 namespace NodaTime
 {
@@ -33,15 +34,15 @@ namespace NodaTime
         /// <summary>
         /// An offset of zero ticks - effectively the permanent offset for UTC.
         /// </summary>
-        public static readonly Offset Zero = Offset.FromMilliseconds(0);
+        public static readonly Offset Zero = FromMilliseconds(0);
         /// <summary>
         /// The minimum permitted offset; one millisecond less than a standard day before UTC.
         /// </summary>
-        public static readonly Offset MinValue = Offset.FromMilliseconds(-NodaConstants.MillisecondsPerStandardDay + 1);
+        public static readonly Offset MinValue = FromMilliseconds(-NodaConstants.MillisecondsPerStandardDay + 1);
         /// <summary>
         /// The maximum permitted offset; one millisecond less than a standard day after UTC.
         /// </summary>
-        public static readonly Offset MaxValue = Offset.FromMilliseconds(NodaConstants.MillisecondsPerStandardDay - 1);
+        public static readonly Offset MaxValue = FromMilliseconds(NodaConstants.MillisecondsPerStandardDay - 1);
 
         private readonly int milliseconds;
 
@@ -108,7 +109,7 @@ namespace NodaTime
         /// <returns>A new <see cref="Offset" /> instance with a negated value.</returns>
         public static Offset operator -(Offset offset)
         {
-            return Offset.FromMilliseconds(-offset.Milliseconds);
+            return FromMilliseconds(-offset.Milliseconds);
         }
 
         /// <summary>
@@ -143,7 +144,7 @@ namespace NodaTime
         /// <exception cref="ArgumentOutOfRangeException">The result of the operation is outside the range of Offset.</exception>
         public static Offset operator +(Offset left, Offset right)
         {
-            return Offset.FromMilliseconds(left.Milliseconds + right.Milliseconds);
+            return FromMilliseconds(left.Milliseconds + right.Milliseconds);
         }
 
         /// <summary>
@@ -165,6 +166,7 @@ namespace NodaTime
         /// <param name="other">The offset to add</param>
         /// <exception cref="ArgumentOutOfRangeException">The result of the operation is outside the range of Offset.</exception>
         /// <returns>The result of adding the other offset to this one.</returns>
+        [Pure]
         public Offset Plus(Offset other)
         {
             return this + other;
@@ -180,7 +182,7 @@ namespace NodaTime
         /// <exception cref="ArgumentOutOfRangeException">The result of the operation is outside the range of Offset.</exception>
         public static Offset operator -(Offset minuend, Offset subtrahend)
         {
-            return Offset.FromMilliseconds(minuend.Milliseconds - subtrahend.Milliseconds);
+            return FromMilliseconds(minuend.Milliseconds - subtrahend.Milliseconds);
         }
 
         /// <summary>
@@ -202,6 +204,7 @@ namespace NodaTime
         /// <param name="other">The offset to subtract</param>
         /// <exception cref="ArgumentOutOfRangeException">The result of the operation is outside the range of Offset.</exception>
         /// <returns>The result of subtracting the other offset from this one.</returns>
+        [Pure]
         public Offset Minus(Offset other)
         {
             return this - other;
@@ -376,10 +379,11 @@ namespace NodaTime
 
         #region Formatting
         /// <summary>
-        ///   Returns a <see cref="System.String" /> that represents this instance.
+        /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
         /// <returns>
-        ///   A <see cref="System.String" /> that represents this instance.
+        /// The value of the current instance in the default format pattern ("g"), using the current thread's
+        /// culture to obtain a format provider.
         /// </returns>
         public override string ToString()
         {
@@ -387,18 +391,16 @@ namespace NodaTime
         }
 
         /// <summary>
-        ///   Formats the value of the current instance using the specified format.
+        /// Formats the value of the current instance using the specified pattern.
         /// </summary>
         /// <returns>
-        ///   A <see cref="T:System.String" /> containing the value of the current instance in the specified format.
+        /// A <see cref="T:System.String" /> containing the value of the current instance in the specified format.
         /// </returns>
-        /// <param name="patternText">The <see cref="T:System.String" /> specifying the pattern to use.
-        ///   -or- 
-        ///   null to use the default pattern defined for the type of the <see cref="T:System.IFormattable" /> implementation. 
+        /// <param name="patternText">The <see cref="T:System.String" /> specifying the pattern to use,
+        /// or null to use the default format pattern ("g").
         /// </param>
-        /// <param name="formatProvider">The <see cref="T:System.IFormatProvider" /> to use to format the value.
-        ///   -or- 
-        ///   null to obtain the numeric format information from the current locale setting of the operating system. 
+        /// <param name="formatProvider">The <see cref="T:System.IFormatProvider" /> to use when formatting the value,
+        /// or null to use the current thread's culture to obtain a format provider.
         /// </param>
         /// <filterpriority>2</filterpriority>
         public string ToString(string patternText, IFormatProvider formatProvider)
@@ -473,6 +475,7 @@ namespace NodaTime
         /// Converts this offset to a .NET standard <see cref="TimeSpan" /> value.
         /// </summary>
         /// <returns>An equivalent <see cref="TimeSpan"/> to this value.</returns>
+        [Pure]
         public TimeSpan ToTimeSpan()
         {
             return TimeSpan.FromMilliseconds(milliseconds);
@@ -536,6 +539,7 @@ namespace NodaTime
         /// </summary>
         /// <param name="info">The <see cref="SerializationInfo"/> to populate with data.</param>
         /// <param name="context">The destination for this serialization.</param>
+        [System.Security.SecurityCritical]
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.AddValue(MillisecondsSerializationName, milliseconds);

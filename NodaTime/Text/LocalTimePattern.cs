@@ -2,8 +2,8 @@
 // Use of this source code is governed by the Apache License 2.0,
 // as found in the LICENSE.txt file.
 
-using System;
 using System.Globalization;
+using NodaTime.Annotations;
 using NodaTime.Globalization;
 using NodaTime.Text.Patterns;
 using NodaTime.Utility;
@@ -18,6 +18,7 @@ namespace NodaTime.Text
     /// may be shared freely between threads. We recommend only using read-only cultures for patterns, although this is
     /// not currently enforced.
     /// </threadsafety>
+    [Immutable] // Well, assuming an immutable culture...
     public sealed class LocalTimePattern : IPattern<LocalTime>
     {
         /// <summary>
@@ -102,7 +103,7 @@ namespace NodaTime.Text
         /// <param name="templateValue">Template value to use for unspecified fields</param>
         /// <returns>A pattern for parsing and formatting local times.</returns>
         /// <exception cref="InvalidPatternException">The pattern text was invalid.</exception>
-        internal static LocalTimePattern Create(string patternText, NodaFormatInfo formatInfo, LocalTime templateValue)
+        private static LocalTimePattern Create(string patternText, NodaFormatInfo formatInfo, LocalTime templateValue)
         {
             Preconditions.CheckNotNull(patternText, "patternText");
             Preconditions.CheckNotNull(formatInfo, "formatInfo");

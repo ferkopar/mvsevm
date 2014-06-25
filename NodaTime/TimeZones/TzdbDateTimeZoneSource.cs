@@ -8,8 +8,8 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Resources;
+using JetBrains.Annotations;
+using NodaTime.Annotations;
 using NodaTime.TimeZones.Cldr;
 using NodaTime.TimeZones.IO;
 using NodaTime.Utility;
@@ -26,6 +26,7 @@ namespace NodaTime.TimeZones
     /// will return zones equal to those returned by <see cref="DateTimeZone.ForOffset"/>.
     /// </remarks>
     /// <threadsafety>This type is immutable reference type. See the thread safety section of the user guide for more information.</threadsafety>
+    [Immutable]
     public sealed class TzdbDateTimeZoneSource : IDateTimeZoneSource
     {
         /// <summary>
@@ -74,60 +75,6 @@ namespace NodaTime.TimeZones
         /// has no location data.
         /// </summary>
         private readonly IList<TzdbZoneLocation> zoneLocations;
-#if !PCL
-        /// <summary>
-        /// Initializes a new instance of the <see cref="TzdbDateTimeZoneSource" /> class from a resource within
-        /// the NodaTime assembly.
-        /// </summary>
-        /// <remarks>For backwards compatibility, this will use the blob time zone data when given the same
-        /// base name which would previously have loaded the now-obsolete resource data.</remarks>
-        /// <param name="baseName">The root name of the resource file.</param>
-        /// <exception cref="InvalidNodaDataException">The data within the resource is invalid.</exception>
-        /// <exception cref="MissingManifestResourceException">The resource set cannot be found.</exception>
-        [Obsolete("Use TzdbDateTimeZoneSource.Default to access the only TZDB resources within the NodaTime assembly")]
-        public TzdbDateTimeZoneSource(string baseName)
-            : this(baseName, Assembly.GetExecutingAssembly())
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="TzdbDateTimeZoneSource" /> class.
-        /// </summary>
-        /// <remarks>For backwards compatibility, this will use the blob time zone data when given the same
-        /// base name which would previously have loaded the now-obsolete resource data from the Noda Time assembly
-        /// itself.</remarks>
-        /// <param name="baseName">The root name of the resource file.</param>
-        /// <param name="assembly">The assembly to search for the time zone resources.</param>
-        /// <exception cref="InvalidNodaDataException">The data within the resource is invalid.</exception>
-        /// <exception cref="MissingManifestResourceException">The resource set cannot be found.</exception>
-        [Obsolete("The resource format for time zone data is deprecated; future versions will only support blob-based data")]
-        public TzdbDateTimeZoneSource(string baseName, Assembly assembly)
-            : this(TzdbResourceData.FromResource(baseName, assembly))
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="TzdbDateTimeZoneSource" /> class.
-        /// </summary>
-        /// <param name="source">The <see cref="ResourceSet"/> to search for the time zone resources.</param>
-        /// <exception cref="InvalidNodaDataException">The data within the resource set is invalid.</exception>
-        [Obsolete("The resource format for time zone data is deprecated; future versions will only support blob-based data")]
-        public TzdbDateTimeZoneSource(ResourceSet source)
-            : this(TzdbResourceData.FromResourceSet(source))
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="TzdbDateTimeZoneSource" /> class.
-        /// </summary>
-        /// <param name="manager">The <see cref="ResourceManager"/> to search for the time zone resources.</param>
-        /// <exception cref="InvalidNodaDataException">The data within the resource manager is invalid.</exception>
-        [Obsolete("The resource format for time zone data is deprecated; future versions will only support blob-based data")]
-        public TzdbDateTimeZoneSource(ResourceManager manager)
-            : this(TzdbResourceData.FromResourceManager(manager))
-        {
-        }
-#endif
 
         /// <summary>
         /// Creates an instance from a stream in the custom Noda Time format. The stream must be readable.
@@ -144,12 +91,11 @@ namespace NodaTime.TimeZones
         /// </remarks>
         /// <param name="stream">The stream containing time zone data</param>
         /// <returns>A <c>TzdbDateTimeZoneSource</c> providing information from the given stream.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="stream"/> is null.</exception>
         /// <exception cref="InvalidNodaDataException">The stream contains invalid time zone data, or data which cannot
         /// be read by this version of Noda Time.</exception>
         /// <exception cref="IOException">Reading from the stream failed.</exception>
         /// <exception cref="InvalidOperationException">The supplied stream doesn't support reading.</exception>
-        public static TzdbDateTimeZoneSource FromStream(Stream stream)
+        public static TzdbDateTimeZoneSource FromStream([NotNull] Stream stream)
         {
             Preconditions.CheckNotNull(stream, "stream");
             return new TzdbDateTimeZoneSource(TzdbStreamData.FromStream(stream));
@@ -265,7 +211,7 @@ namespace NodaTime.TimeZones
             int thisYear = SystemClock.Instance.Now.InUtc().Year;
             Instant startOfThisYear = Instant.FromUtc(thisYear, 1, 1, 0, 0);
             Instant startOfNextYear = Instant.FromUtc(thisYear + 1, 1, 1, 0, 0);
-            var candidates = WindowsMapping.PrimaryMapping.Values.Select(id => ForId(id)).ToList();
+            var candidates = WindowsMapping.PrimaryMapping.Values.Select(ForId).ToList();
             // Would create a HashSet directly, but it appears not to be present on all versions of the PCL...
             var instants = candidates.SelectMany(z => z.GetZoneIntervals(startOfThisYear, startOfNextYear))
                                      .Select(zi => Instant.Max(zi.Start, startOfThisYear)) // Clamp to start of interval
@@ -320,26 +266,8 @@ namespace NodaTime.TimeZones
         /// Every zone location's time zone ID is guaranteed to be valid within this source (assuming the source
         /// has been validated).
         /// </para>
-        /// <para>
-        /// The legacy resource format does not include location information,
-        /// and this property will throw an exception if the information is requested. It is expected
-        /// that callers who wish to use newer features will not be attempting to use legacy formats
-        /// for time zone data.
-        /// </para>
         /// </remarks>
-        /// <exception cref="InvalidOperationException">This is a legacy resource-based data source which does
-        /// not include location information.</exception>
-        public IList<TzdbZoneLocation> ZoneLocations
-        {
-            get
-            {
-                if (zoneLocations == null)
-                {
-                    throw new InvalidOperationException("Zone location information is not available in the legacy resource format");
-                }
-                return zoneLocations;
-            }
-        }
+        public IList<TzdbZoneLocation> ZoneLocations { get { return zoneLocations; } }
 
         /// <summary>
         /// Returns just the TZDB version (e.g. "2013a") of the source data.

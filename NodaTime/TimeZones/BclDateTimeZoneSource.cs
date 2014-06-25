@@ -2,6 +2,7 @@
 // Use of this source code is governed by the Apache License 2.0,
 // as found in the LICENSE.txt file.
 
+using NodaTime.Annotations;
 #if !PCL
 using System;
 using System.Collections.Generic;
@@ -23,6 +24,7 @@ namespace NodaTime.TimeZones
     /// </para>
     /// </remarks>
     /// <threadsafety>This type maintains no state, and all members are thread-safe. See the thread safety section of the user guide for more information.</threadsafety>
+    [Immutable]
     public sealed class BclDateTimeZoneSource : IDateTimeZoneSource
     {
         /// <summary>
@@ -59,7 +61,7 @@ namespace NodaTime.TimeZones
                     // a system time zone.  If not, this also throws TimeZoneNotFoundException.
                     TimeZoneInfo.FindSystemTimeZoneById(local.Id);
 
-                    return new string[] { local.Id };
+                    return new[] { local.Id };
                 }
             }
             catch (TimeZoneNotFoundException)

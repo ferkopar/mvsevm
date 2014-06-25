@@ -15,24 +15,17 @@ namespace NodaTime.TimeZones
     internal struct Transition : IEquatable<Transition>
     {
         private readonly Instant instant;
-        public Instant Instant { get { return instant; } }
+        internal Instant Instant { get { return instant; } }
 
         private readonly Offset oldOffset;
-
-        /// <summary>
-        /// The offset which applied from the previous transition until this
-        /// one.
-        /// </summary>
-        public Offset OldOffset { get { return oldOffset; } }
-
         private readonly Offset newOffset;
 
         /// <summary>
         /// The offset from the time when this transition occurs until the next transition.
         /// </summary>
-        public Offset NewOffset { get { return newOffset; } }
+        internal Offset NewOffset { get { return newOffset; } }
 
-        public Transition(Instant instant, Offset oldOffset, Offset newOffset)
+        internal Transition(Instant instant, Offset oldOffset, Offset newOffset)
         {
             this.instant = instant;
             this.oldOffset = oldOffset;
@@ -41,23 +34,7 @@ namespace NodaTime.TimeZones
 
         public bool Equals(Transition other)
         {
-            return instant == other.Instant && oldOffset == other.OldOffset && newOffset == other.NewOffset;
-        }
-
-        /// <summary>
-        /// Returns the transition which occurs later of the two provided. (If they occur at the same instant, the second argument is returned.)
-        /// </summary>
-        internal static Transition Later(Transition left, Transition right)
-        {
-            return left.Instant > right.Instant ? left : right;
-        }
-
-        /// <summary>
-        /// Returns the transition which occurs earlier of the two provided. (If they occur at the same instant, the first argument is returned.)
-        /// </summary>
-        internal static Transition Earlier(Transition left, Transition right)
-        {
-            return left.Instant > right.Instant ? right : left;
+            return instant == other.Instant && oldOffset == other.oldOffset && newOffset == other.NewOffset;
         }
 
         #region Operators

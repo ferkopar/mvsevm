@@ -6,6 +6,8 @@ using System;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
+using JetBrains.Annotations;
+using NodaTime.Annotations;
 using NodaTime.Text;
 using NodaTime.Utility;
 
@@ -20,28 +22,29 @@ namespace NodaTime
     /// This type is not thread-safe without extra synchronization, but has no
     /// thread affinity.
     /// </threadsafety>
+    [Mutable]
     public sealed class PeriodBuilder : IXmlSerializable
     {
         #region Properties
         /// <summary>
         /// Gets or sets the number of years within the period.
         /// </summary>
-        public long Years { get; set; }
+        public int Years { get; set; }
 
         /// <summary>
         /// Gets or sets the number of months within the period.
         /// </summary>
-        public long Months { get; set; }
+        public int Months { get; set; }
 
         /// <summary>
         /// Gets or sets the number of weeks within the period.
         /// </summary>
-        public long Weeks { get; set; }
+        public int Weeks { get; set; }
 
         /// <summary>
         /// Gets or sets the number of days within the period.
         /// </summary>
-        public long Days { get; set; }
+        public int Days { get; set; }
 
         /// <summary>
         /// Gets or sets the number of hours within the period.
@@ -82,8 +85,7 @@ namespace NodaTime
         /// allows object initializers to be used.
         /// </summary>
         /// <param name="period">An existing period to copy values from.</param>
-        /// <exception cref="ArgumentNullException"><paramref name="period"/> is null.</exception>
-        public PeriodBuilder(Period period)
+        public PeriodBuilder([NotNull] Period period)
         {
             Preconditions.CheckNotNull(period, "period");
             Years = period.Years;
@@ -96,13 +98,17 @@ namespace NodaTime
             Milliseconds = period.Milliseconds;
             Ticks = period.Ticks;
         }
-
+        
         /// <summary>
         /// Gets or sets the value of a single unit.
         /// </summary>
+        /// <remarks>
+        /// The type of this indexer is <see cref="System.Int64"/> for uniformity, but any date unit (year, month, week, day) will only ever have a value
+        /// in the range of <see cref="System.Int32"/>.
+        /// </remarks>
         /// <param name="unit">A single value within the <see cref="PeriodUnits"/> enumeration.</param>
         /// <returns>The value of the given unit within this period builder, or zero if the unit is unset.</returns>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="unit"/> is not a single unit.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="unit"/> is not a single unit, or a value is provided for a date unit which is outside the range of <see cref="System.Int32"/>.</exception>
         public long this[PeriodUnits unit]
         {
             get
@@ -125,10 +131,10 @@ namespace NodaTime
             {
                 switch (unit)
                 {
-                    case PeriodUnits.Years: Years = value; return;
-                    case PeriodUnits.Months: Months = value; return;
-                    case PeriodUnits.Weeks: Weeks = value; return;
-                    case PeriodUnits.Days: Days = value; return;
+                    case PeriodUnits.Years: Years = (int) Preconditions.CheckArgumentRange("value", value, int.MinValue, int.MaxValue); return;
+                    case PeriodUnits.Months: Months = (int) Preconditions.CheckArgumentRange("value", value, int.MinValue, int.MaxValue); return;
+                    case PeriodUnits.Weeks: Weeks = (int) Preconditions.CheckArgumentRange("value", value, int.MinValue, int.MaxValue); return;
+                    case PeriodUnits.Days: Days = (int) Preconditions.CheckArgumentRange("value", value, int.MinValue, int.MaxValue); return;
                     case PeriodUnits.Hours: Hours = value; return;
                     case PeriodUnits.Minutes: Minutes = value; return;
                     case PeriodUnits.Seconds: Seconds = value; return;

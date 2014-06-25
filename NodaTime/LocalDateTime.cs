@@ -2,16 +2,18 @@
 // Use of this source code is governed by the Apache License 2.0,
 // as found in the LICENSE.txt file.
 
-using NodaTime.Calendars;
-using NodaTime.Text;
-using NodaTime.TimeZones;
-using NodaTime.Utility;
 using System;
 using System.Globalization;
 using System.Runtime.Serialization;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
+using JetBrains.Annotations;
+using NodaTime.Calendars;
+using NodaTime.Fields;
+using NodaTime.Text;
+using NodaTime.TimeZones;
+using NodaTime.Utility;
 
 namespace NodaTime
 {
@@ -48,8 +50,8 @@ namespace NodaTime
         , ISerializable
 #endif
     {
-        private readonly CalendarSystem calendar;
-        private readonly LocalInstant localInstant;
+        private readonly LocalDate date;
+        private readonly LocalTime time;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LocalDateTime"/> struct using the ISO
@@ -62,19 +64,26 @@ namespace NodaTime
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="LocalDateTime"/> struct.
+        /// Initializes a new instance of the <see cref="LocalDateTime"/> struct using the given
+        /// calendar system.
         /// </summary>
         /// <param name="localInstant">The local instant.</param>
         /// <param name="calendar">The calendar system.</param>
         /// <returns>The resulting date/time.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="calendar"/> is null.</exception>
-        internal LocalDateTime(LocalInstant localInstant, CalendarSystem calendar)
+        internal LocalDateTime(LocalInstant localInstant, [NotNull] CalendarSystem calendar)
         {
             Preconditions.CheckNotNull(calendar, "calendar");
-            this.localInstant = localInstant;
-            this.calendar = calendar;
+            // Work out how far into the current day we are, and subtract that from our current ticks.
+            // This is much quicker than finding out the current day, month, year etc and then reconstructing everything.
+            long dayTicks = localInstant.Ticks % NodaConstants.TicksPerStandardDay;
+            if (dayTicks < 0)
+            {
+                dayTicks += NodaConstants.TicksPerStandardDay;
+            }
+            date = new LocalDate(new LocalInstant(localInstant.Ticks - dayTicks), calendar);
+            time = new LocalTime(dayTicks);
         }
-        
+
         /// <summary>
         /// Initializes a new instance of the <see cref="LocalDateTime"/> struct using the ISO calendar system.
         /// </summary>
@@ -102,13 +111,11 @@ namespace NodaTime
         /// <param name="minute">The minute.</param>
         /// <param name="calendar">The calendar.</param>
         /// <returns>The resulting date/time.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="calendar"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException">The parameters do not form a valid date/time.</exception>
-        public LocalDateTime(int year, int month, int day, int hour, int minute, CalendarSystem calendar)
+        public LocalDateTime(int year, int month, int day, int hour, int minute, [NotNull] CalendarSystem calendar)
+            : this(new LocalDate(year, month, day, calendar),
+                   new LocalTime(hour, minute))
         {
-            Preconditions.CheckNotNull(calendar, "calendar");
-            localInstant = calendar.GetLocalInstant(year, month, day, hour, minute);
-            this.calendar = calendar;
         }
 
         /// <summary>
@@ -140,13 +147,11 @@ namespace NodaTime
         /// <param name="second">The second.</param>
         /// <param name="calendar">The calendar.</param>
         /// <returns>The resulting date/time.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="calendar"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException">The parameters do not form a valid date/time.</exception>
-        public LocalDateTime(int year, int month, int day, int hour, int minute, int second, CalendarSystem calendar)
+        public LocalDateTime(int year, int month, int day, int hour, int minute, int second, [NotNull] CalendarSystem calendar)
+            : this(new LocalDate(year, month, day, calendar),
+                   new LocalTime(hour, minute, second))
         {
-            Preconditions.CheckNotNull(calendar, "calendar");
-            localInstant = calendar.GetLocalInstant(year, month, day, hour, minute, second);
-            this.calendar = calendar;
         }
 
         /// <summary>
@@ -180,9 +185,8 @@ namespace NodaTime
         /// <param name="millisecond">The millisecond.</param>
         /// <param name="calendar">The calendar.</param>
         /// <returns>The resulting date/time.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="calendar"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException">The parameters do not form a valid date/time.</exception>
-        public LocalDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, CalendarSystem calendar)
+        public LocalDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, [NotNull] CalendarSystem calendar)
             : this(year, month, day, hour, minute, second, millisecond, 0, calendar)
         {
         }
@@ -220,40 +224,48 @@ namespace NodaTime
         /// <param name="tickWithinMillisecond">The tick within millisecond.</param>
         /// <param name="calendar">The calendar.</param>
         /// <returns>The resulting date/time.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="calendar"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException">The parameters do not form a valid date/time.</exception>
-        public LocalDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int tickWithinMillisecond, CalendarSystem calendar)
+        public LocalDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int tickWithinMillisecond, [NotNull] CalendarSystem calendar)
+            : this(new LocalDate(year, month, day, calendar),
+                   new LocalTime(hour, minute, second, millisecond, tickWithinMillisecond))
         {
-            Preconditions.CheckNotNull(calendar, "calendar");
-            localInstant = calendar.GetLocalInstant(year, month, day, hour, minute, second, millisecond, tickWithinMillisecond);
-            this.calendar = calendar;
         }
 
-        internal LocalInstant LocalInstant { get { return localInstant; } }
+        internal LocalDateTime(LocalDate date, LocalTime time)
+        {
+            this.date = date;
+            this.time = time;
+        }
+
+        // TODO(2.0): Remove this if at all possible.
+        internal LocalInstant LocalInstant
+        {
+            get { return date.LocalInstant.PlusTicks(time.TickOfDay); }
+        }
 
         /// <summary>Gets the calendar system associated with this local date and time.</summary>
         public CalendarSystem Calendar
         {
-            get { return calendar ?? CalendarSystem.Iso; }
+            get { return date.Calendar; }
         }
 
         /// <summary>Gets the century within the era of this local date and time.</summary>
-        public int CenturyOfEra { get { return Calendar.GetCenturyOfEra(localInstant); } }
+        public int CenturyOfEra { get { return date.CenturyOfEra; } }
 
         /// <summary>Gets the year of this local date and time.</summary>
         /// <remarks>This returns the "absolute year", so, for the ISO calendar,
         /// a value of 0 means 1 BC, for example.</remarks>
-        public int Year { get { return Calendar.GetYear(localInstant); } }
+        public int Year { get { return date.Year; } }
 
         /// <summary>Gets the year of this local date and time within its century.</summary>
         /// <remarks>This always returns a value in the range 0 to 99 inclusive.</remarks>
-        public int YearOfCentury { get { return Calendar.GetYearOfCentury(localInstant); } }
+        public int YearOfCentury { get { return date.YearOfCentury; } }
 
         /// <summary>Gets the year of this local date and time within its era.</summary>
-        public int YearOfEra { get { return Calendar.GetYearOfEra(localInstant); } }
+        public int YearOfEra { get { return date.YearOfEra; } }
 
         /// <summary>Gets the era of this local date and time.</summary>
-        public Era Era { get { return Calendar.Eras[Calendar.GetEra(localInstant)]; } }
+        public Era Era { get { return date.Era; } }
 
         /// <summary>
         /// Gets the "week year" of this local date and time.
@@ -273,27 +285,27 @@ namespace NodaTime
         /// so is part of week 1 of WeekYear 2013.
         /// </para>
         /// </remarks>
-        public int WeekYear { get { return Calendar.GetWeekYear(localInstant); } }
+        public int WeekYear { get { return date.WeekYear; } }
 
         /// <summary>
         /// Gets the month of this local date and time within the year.
         /// </summary>
-        public int Month { get { return Calendar.GetMonthOfYear(localInstant); } }
+        public int Month { get { return date.Month; } }
 
         /// <summary>
         /// Gets the week within the WeekYear. See <see cref="WeekYear"/> for more details.
         /// </summary>
-        public int WeekOfWeekYear { get { return Calendar.GetWeekOfWeekYear(localInstant); } }
+        public int WeekOfWeekYear { get { return date.WeekOfWeekYear; } }
 
         /// <summary>
         /// Gets the day of this local date and time within the year.
         /// </summary>
-        public int DayOfYear { get { return Calendar.GetDayOfYear(localInstant); } }
+        public int DayOfYear { get { return date.DayOfYear; } }
 
         /// <summary>
         /// Gets the day of this local date and time within the month.
         /// </summary>
-        public int Day { get { return Calendar.GetDayOfMonth(localInstant); } }
+        public int Day { get { return date.Day; } }
 
         /// <summary>
         /// Gets the week day of this local date and time expressed as an <see cref="NodaTime.IsoDayOfWeek"/> value,
@@ -301,7 +313,7 @@ namespace NodaTime
         /// </summary>
         /// <exception cref="InvalidOperationException">The underlying calendar doesn't use ISO days of the week.</exception>
         /// <seealso cref="DayOfWeek"/>
-        public IsoDayOfWeek IsoDayOfWeek { get { return Calendar.GetIsoDayOfWeek(localInstant); } }
+        public IsoDayOfWeek IsoDayOfWeek { get { return date.IsoDayOfWeek; } }
 
         /// <summary>
         /// Gets the week day of this local date and time as a number.
@@ -310,63 +322,54 @@ namespace NodaTime
         /// For calendars using ISO week days, this gives 1 for Monday to 7 for Sunday.
         /// </remarks>
         /// <seealso cref="IsoDayOfWeek"/>
-        public int DayOfWeek { get { return Calendar.GetDayOfWeek(localInstant); } }
+        public int DayOfWeek { get { return date.DayOfWeek; } }
 
         /// <summary>
         /// Gets the hour of day of this local date and time, in the range 0 to 23 inclusive.
         /// </summary>
-        public int Hour { get { return Calendar.GetHourOfDay(localInstant); } }
+        public int Hour { get { return time.Hour; } }
 
         /// <summary>
         /// Gets the hour of the half-day of this local date and time, in the range 1 to 12 inclusive.
         /// </summary>
-        public int ClockHourOfHalfDay { get { return Calendar.GetClockHourOfHalfDay(localInstant); } }
+        public int ClockHourOfHalfDay { get { return time.ClockHourOfHalfDay; } }
 
         /// <summary>
         /// Gets the minute of this local date and time, in the range 0 to 59 inclusive.
         /// </summary>
-        public int Minute { get { return Calendar.GetMinuteOfHour(localInstant); } }
+        public int Minute { get { return time.Minute; } }
 
         /// <summary>
         /// Gets the second of this local date and time within the minute, in the range 0 to 59 inclusive.
         /// </summary>
-        public int Second { get { return Calendar.GetSecondOfMinute(localInstant); } }
+        public int Second { get { return time.Second; } }
 
         /// <summary>
         /// Gets the millisecond of this local date and time within the second, in the range 0 to 999 inclusive.
         /// </summary>
-        public int Millisecond { get { return Calendar.GetMillisecondOfSecond(localInstant); } }
+        public int Millisecond { get { return time.Millisecond; } }
 
         /// <summary>
         /// Gets the tick of this local time within the second, in the range 0 to 9,999,999 inclusive.
         /// </summary>
-        public int TickOfSecond { get { return Calendar.GetTickOfSecond(localInstant); } }
+        public int TickOfSecond { get { return time.TickOfSecond; } }
 
         /// <summary>
         /// Gets the tick of this local date and time within the day, in the range 0 to 863,999,999,999 inclusive.
         /// </summary>
-        public long TickOfDay { get { return Calendar.GetTickOfDay(localInstant); } }
+        public long TickOfDay { get { return time.TickOfDay; } }
 
         /// <summary>
         /// Gets the time portion of this local date and time as a <see cref="LocalTime"/>.
         /// </summary>
-        public LocalTime TimeOfDay
-        {
-            get
-            {
-                long ticks = localInstant.Ticks % NodaConstants.TicksPerStandardDay;
-                if (ticks < 0)
-                {
-                    ticks += NodaConstants.TicksPerStandardDay;
-                }
-                return new LocalTime(new LocalInstant(ticks));
-            }
-        }
+        public LocalTime TimeOfDay { get { return new LocalTime(TickOfDay); } }
 
         /// <summary>
         /// Gets the date portion of this local date and time as a <see cref="LocalDate"/> in the same calendar system as this value.
         /// </summary>
-        public LocalDate Date
+        public LocalDate Date { get { return date; } }
+
+        /* FIXME: This is potentially useful code.
         { 
             get 
             { 
@@ -377,9 +380,10 @@ namespace NodaTime
                 {
                     dayTicks += NodaConstants.TicksPerStandardDay;
                 }
-                return new LocalDate(new LocalDateTime(new LocalInstant(localInstant.Ticks - dayTicks), Calendar));
+                return new LocalDate(new LocalInstant(localInstant.Ticks - dayTicks), Calendar);
             }
         }
+        */
 
         /// <summary>
         /// Constructs a <see cref="DateTime"/> from this value which has a <see cref="DateTime.Kind" />
@@ -392,9 +396,10 @@ namespace NodaTime
         /// the Noda Time non-system-specific "local" concept as exists in .NET.
         /// </remarks>
         /// <returns>A <see cref="DateTime"/> value for the same date and time as this value.</returns>
+        [Pure]
         public DateTime ToDateTimeUnspecified()
         {
-            return localInstant.ToDateTimeUnspecified();
+            return LocalInstant.ToDateTimeUnspecified();
         }
 
         /// <summary>
@@ -419,7 +424,7 @@ namespace NodaTime
         /// </returns>
         public bool Equals(LocalDateTime other)
         {
-            return localInstant == other.localInstant && Calendar.Equals(other.Calendar);
+            return date == other.Date && time == other.time;
         }
         #endregion
 
@@ -578,10 +583,11 @@ namespace NodaTime
         /// </summary>
         /// <param name="period">Period to add</param>
         /// <returns>The resulting local date and time</returns>
+        [Pure]
         public LocalDateTime Plus(Period period)
         {
             Preconditions.CheckNotNull(period, "period");
-            return new LocalDateTime(period.AddTo(localInstant, Calendar, 1), Calendar);
+            return period.AddTo(date, time, 1);
         }
 
         /// <summary>
@@ -613,10 +619,11 @@ namespace NodaTime
         /// </summary>
         /// <param name="period">Period to subtract</param>
         /// <returns>The resulting local date and time</returns>
+        [Pure]
         public LocalDateTime Minus(Period period)
         {
             Preconditions.CheckNotNull(period, "period");
-            return new LocalDateTime(period.AddTo(localInstant, Calendar, -1), Calendar);
+            return period.AddTo(date, time, -1);
         }
         #endregion
 
@@ -661,11 +668,11 @@ namespace NodaTime
         /// </summary>
         /// <param name="calendarSystem">The calendar system to convert this local date to.</param>
         /// <returns>The converted LocalDateTime.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="calendarSystem"/> is null.</exception>
-        public LocalDateTime WithCalendar(CalendarSystem calendarSystem)
+        [Pure]
+        public LocalDateTime WithCalendar([NotNull] CalendarSystem calendarSystem)
         {
             Preconditions.CheckNotNull(calendarSystem, "calendarSystem");
-            return new LocalDateTime(localInstant, calendarSystem);
+            return new LocalDateTime(date.WithCalendar(calendarSystem), time);
         }
 
         /// <summary>
@@ -678,10 +685,10 @@ namespace NodaTime
         /// </remarks>
         /// <param name="years">The number of years to add</param>
         /// <returns>The current value plus the given number of years.</returns>
+        [Pure]
         public LocalDateTime PlusYears(int years)
         {
-            LocalInstant newLocalInstant = Calendar.PeriodFields.Years.Add(localInstant, years);
-            return new LocalDateTime(newLocalInstant, Calendar);
+            return new LocalDateTime(date.PlusYears(years), time);
         }
 
         /// <summary>
@@ -700,10 +707,10 @@ namespace NodaTime
         /// </remarks>
         /// <param name="months">The number of months to add</param>
         /// <returns>The current value plus the given number of months.</returns>
+        [Pure]
         public LocalDateTime PlusMonths(int months)
         {
-            LocalInstant newLocalInstant = Calendar.PeriodFields.Months.Add(localInstant, months);
-            return new LocalDateTime(newLocalInstant, Calendar);
+            return new LocalDateTime(date.PlusMonths(months), time);
         }
 
         /// <summary>
@@ -717,10 +724,10 @@ namespace NodaTime
         /// </remarks>
         /// <param name="days">The number of days to add</param>
         /// <returns>The current value plus the given number of days.</returns>
+        [Pure]
         public LocalDateTime PlusDays(int days)
         {
-            LocalInstant newLocalInstant = Calendar.PeriodFields.Days.Add(localInstant, days);
-            return new LocalDateTime(newLocalInstant, Calendar);
+            return new LocalDateTime(date.PlusDays(days), time);
         }
 
         /// <summary>
@@ -728,10 +735,10 @@ namespace NodaTime
         /// </summary>
         /// <param name="weeks">The number of weeks to add</param>
         /// <returns>The current value plus the given number of weeks.</returns>
+        [Pure]
         public LocalDateTime PlusWeeks(int weeks)
         {
-            LocalInstant newLocalInstant = Calendar.PeriodFields.Weeks.Add(localInstant, weeks);
-            return new LocalDateTime(newLocalInstant, Calendar);
+            return new LocalDateTime(date.PlusWeeks(weeks), time);
         }
 
         /// <summary>
@@ -739,10 +746,10 @@ namespace NodaTime
         /// </summary>
         /// <param name="hours">The number of hours to add</param>
         /// <returns>The current value plus the given number of hours.</returns>
+        [Pure]
         public LocalDateTime PlusHours(long hours)
         {
-            LocalInstant newLocalInstant = Calendar.PeriodFields.Hours.Add(localInstant, hours);
-            return new LocalDateTime(newLocalInstant, Calendar);
+            return TimePeriodField.Hours.Add(this, hours);
         }
 
         /// <summary>
@@ -750,10 +757,10 @@ namespace NodaTime
         /// </summary>
         /// <param name="minutes">The number of minutes to add</param>
         /// <returns>The current value plus the given number of minutes.</returns>
+        [Pure]
         public LocalDateTime PlusMinutes(long minutes)
         {
-            LocalInstant newLocalInstant = Calendar.PeriodFields.Minutes.Add(localInstant, minutes);
-            return new LocalDateTime(newLocalInstant, Calendar);
+            return TimePeriodField.Minutes.Add(this, minutes);
         }
 
         /// <summary>
@@ -761,10 +768,10 @@ namespace NodaTime
         /// </summary>
         /// <param name="seconds">The number of seconds to add</param>
         /// <returns>The current value plus the given number of seconds.</returns>
+        [Pure]
         public LocalDateTime PlusSeconds(long seconds)
         {
-            LocalInstant newLocalInstant = Calendar.PeriodFields.Seconds.Add(localInstant, seconds);
-            return new LocalDateTime(newLocalInstant, Calendar);
+            return TimePeriodField.Seconds.Add(this, seconds);
         }
 
         /// <summary>
@@ -772,10 +779,10 @@ namespace NodaTime
         /// </summary>
         /// <param name="milliseconds">The number of milliseconds to add</param>
         /// <returns>The current value plus the given number of milliseconds.</returns>
+        [Pure]
         public LocalDateTime PlusMilliseconds(long milliseconds)
         {
-            LocalInstant newLocalInstant = Calendar.PeriodFields.Milliseconds.Add(localInstant, milliseconds);
-            return new LocalDateTime(newLocalInstant, Calendar);
+            return TimePeriodField.Milliseconds.Add(this, milliseconds);
         }
 
         /// <summary>
@@ -783,10 +790,10 @@ namespace NodaTime
         /// </summary>
         /// <param name="ticks">The number of ticks to add</param>
         /// <returns>The current value plus the given number of ticks.</returns>
+        [Pure]
         public LocalDateTime PlusTicks(long ticks)
         {
-            LocalInstant newLocalInstant = Calendar.PeriodFields.Ticks.Add(localInstant, ticks);
-            return new LocalDateTime(newLocalInstant, Calendar);
+            return TimePeriodField.Ticks.Add(this, ticks);
         }
 
         /// <summary>
@@ -800,21 +807,11 @@ namespace NodaTime
         /// <exception cref="InvalidOperationException">The underlying calendar doesn't use ISO days of the week.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="targetDayOfWeek"/> is not a valid day of the
         /// week (Monday to Sunday).</exception>
+        [Pure]
         public LocalDateTime Next(IsoDayOfWeek targetDayOfWeek)
         {
-            // Avoids boxing...
-            if (targetDayOfWeek < IsoDayOfWeek.Monday || targetDayOfWeek > IsoDayOfWeek.Sunday)
-            {
-                throw new ArgumentOutOfRangeException("targetDayOfWeek");
-            }
-            // This will throw the desired exception for calendars with different week systems.
-            IsoDayOfWeek thisDay = IsoDayOfWeek;
-            int difference = targetDayOfWeek - thisDay;
-            if (difference <= 0)
-            {
-                difference += 7;
-            }
-            return PlusDays(difference);
+            // FIXME
+            return new LocalDateTime(Date.Next(targetDayOfWeek), TimeOfDay);
         }
 
         /// <summary>
@@ -828,21 +825,11 @@ namespace NodaTime
         /// <exception cref="InvalidOperationException">The underlying calendar doesn't use ISO days of the week.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="targetDayOfWeek"/> is not a valid day of the
         /// week (Monday to Sunday).</exception>
+        [Pure]
         public LocalDateTime Previous(IsoDayOfWeek targetDayOfWeek)
         {
-            // Avoids boxing...
-            if (targetDayOfWeek < IsoDayOfWeek.Monday || targetDayOfWeek > IsoDayOfWeek.Sunday)
-            {
-                throw new ArgumentOutOfRangeException("targetDayOfWeek");
-            }
-            // This will throw the desired exception for calendars with different week systems.
-            IsoDayOfWeek thisDay = IsoDayOfWeek;
-            int difference = targetDayOfWeek - thisDay;
-            if (difference >= 0)
-            {
-                difference -= 7;
-            }
-            return PlusDays(difference);
+            // FIXME
+            return new LocalDateTime(Date.Previous(targetDayOfWeek), TimeOfDay);
         }
 
         /// <summary>
@@ -851,6 +838,7 @@ namespace NodaTime
         /// <remarks>This method is purely a convenient alternative to calling the <see cref="OffsetDateTime"/> constructor directly.</remarks>
         /// <param name="offset">The offset to apply.</param>
         /// <returns>The result of this local date/time offset by the given amount.</returns>
+        [Pure]
         public OffsetDateTime WithOffset(Offset offset)
         {
             return new OffsetDateTime(this, offset);
@@ -861,6 +849,7 @@ namespace NodaTime
         /// </summary>
         /// <remarks>As UTC is a fixed time zone, there is no chance that this local date/time is ambiguous or skipped.</remarks>
         /// <returns>The result of mapping this local date/time in UTC.</returns>
+        [Pure]
         public ZonedDateTime InUtc()
         {
             // Use the internal constructor to avoid validation. We know it will be fine.
@@ -873,12 +862,16 @@ namespace NodaTime
         /// ambiguous or the time is skipped.
         /// </summary>
         /// <remarks>
+        /// See <see cref="InZoneLeniently"/> and <see cref="InZone"/> for alternative ways to map a local time to a
+        /// specific instant.
         /// This is solely a convenience method for calling <see cref="DateTimeZone.AtStrictly" />.
         /// </remarks>
         /// <param name="zone">The time zone in which to map this local date/time.</param>
+        /// <exception cref="SkippedTimeException">This local date/time is skipped in the given time zone.</exception>
+        /// <exception cref="AmbiguousTimeException">This local date/time is ambiguous in the given time zone.</exception>
         /// <returns>The result of mapping this local date/time in the given time zone.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="zone"/> is null.</exception>
-        public ZonedDateTime InZoneStrictly(DateTimeZone zone)
+        [Pure]
+        public ZonedDateTime InZoneStrictly([NotNull] DateTimeZone zone)
         {
             Preconditions.CheckNotNull(zone, "zone");
             return zone.AtStrictly(this);
@@ -891,12 +884,14 @@ namespace NodaTime
         /// after the "gap".
         /// </summary>
         /// <remarks>
+        /// See <see cref="InZoneStrictly"/> and <see cref="InZone"/> for alternative ways to map a local time to a
+        /// specific instant.
         /// This is solely a convenience method for calling <see cref="DateTimeZone.AtLeniently" />.
         /// </remarks>
         /// <param name="zone">The time zone in which to map this local date/time.</param>
         /// <returns>The result of mapping this local date/time in the given time zone.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="zone"/> is null.</exception>
-        public ZonedDateTime InZoneLeniently(DateTimeZone zone)
+        [Pure]
+        public ZonedDateTime InZoneLeniently([NotNull] DateTimeZone zone)
         {
             Preconditions.CheckNotNull(zone, "zone");
             return zone.AtLeniently(this);
@@ -907,13 +902,15 @@ namespace NodaTime
         /// the given <see cref="ZoneLocalMappingResolver"/> to handle ambiguity and skipped times.
         /// </summary>
         /// <remarks>
+        /// See <see cref="InZoneStrictly"/> and <see cref="InZoneLeniently"/> for alternative ways to map a local time
+        /// to a specific instant.
         /// This is a convenience method for calling <see cref="DateTimeZone.ResolveLocal"/>.
         /// </remarks>
         /// <param name="zone">The time zone to map this local date and time into</param>
         /// <param name="resolver">The resolver to apply to the mapping.</param>
         /// <returns>The result of resolving the mapping.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="zone"/> or <paramref name="resolver"/> is null.</exception>
-        public ZonedDateTime InZone(DateTimeZone zone, ZoneLocalMappingResolver resolver)
+        [Pure]
+        public ZonedDateTime InZone([NotNull] DateTimeZone zone, [NotNull] ZoneLocalMappingResolver resolver)
         {
             Preconditions.CheckNotNull(zone, "zone");
             Preconditions.CheckNotNull(resolver, "resolver");
@@ -925,7 +922,7 @@ namespace NodaTime
         /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
         /// <returns>
-        /// The value of the current instance in the standard format pattern, using the current thread's
+        /// The value of the current instance in the default format pattern ("G"), using the current thread's
         /// culture to obtain a format provider.
         /// </returns>
         public override string ToString()
@@ -940,7 +937,7 @@ namespace NodaTime
         /// A <see cref="T:System.String" /> containing the value of the current instance in the specified format.
         /// </returns>
         /// <param name="patternText">The <see cref="T:System.String" /> specifying the pattern to use,
-        /// or null to use the default format pattern.
+        /// or null to use the default format pattern ("G").
         /// </param>
         /// <param name="formatProvider">The <see cref="T:System.IFormatProvider" /> to use when formatting the value,
         /// or null to use the current thread's culture to obtain a format provider.
@@ -1009,9 +1006,10 @@ namespace NodaTime
         /// </summary>
         /// <param name="info">The <see cref="SerializationInfo"/> to populate with data.</param>
         /// <param name="context">The destination for this serialization.</param>
+        [System.Security.SecurityCritical]
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            info.AddValue(LocalTicksSerializationName, localInstant.Ticks);
+            info.AddValue(LocalTicksSerializationName, LocalInstant.Ticks);
             info.AddValue(CalendarIdSerializationName, Calendar.Id);
         }
         #endregion

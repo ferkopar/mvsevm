@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using NodaTime.Annotations;
 using NodaTime.TimeZones.IO;
 using NodaTime.Utility;
 
@@ -18,6 +19,7 @@ namespace NodaTime.TimeZones.Cldr
     /// for more details of the structure of the file from which data is taken.
     /// </remarks>
     /// <threadsafety>This type is immutable reference type. See the thread safety section of the user guide for more information.</threadsafety>
+    [Immutable]
     public sealed class WindowsZones
     {        
         private readonly string version;
@@ -49,8 +51,7 @@ namespace NodaTime.TimeZones.Cldr
         /// "2013b" to be supply a <c>WindowsZones</c> object with a <c>TzdbVersion</c> of "2012f".
         /// </para>
         /// <para>
-        /// This property will never return a null value, but will be "Unknown" if the data
-        /// is loaded from the legacy resource format.
+        /// This property will never return a null value.
         /// </para>
         /// </remarks>
         public string TzdbVersion { get { return tzdbVersion; } }
@@ -66,8 +67,7 @@ namespace NodaTime.TimeZones.Cldr
         /// so "7dc0101" for example.
         /// </para>
         /// <para>
-        /// This property will never return a null value, but will be "Unknown" if the data
-        /// is loaded from the legacy resource format.
+        /// This property will never return a null value.
         /// </para>
         /// </remarks>
         public string WindowsVersion { get { return windowsVersion; } }
@@ -96,9 +96,6 @@ namespace NodaTime.TimeZones.Cldr
         /// and it appearing in CLDR, ready to be used by Noda Time. (There's also bound to be a delay between it appearing
         /// in CLDR and being used in your production system.) In practice however, you're unlikely to wish to use a time zone
         /// which isn't covered here.</para>
-        /// <para>
-        /// If the data is loaded from the legacy resource format, this will only include the primary mappings.
-        /// </para>
         /// </remarks>
         public IList<MapZone> MapZones { get { return mapZones; } }
 

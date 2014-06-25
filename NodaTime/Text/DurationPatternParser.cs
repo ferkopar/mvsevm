@@ -2,13 +2,13 @@
 // Use of this source code is governed by the Apache License 2.0,
 // as found in the LICENSE.txt file.
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using NodaTime.Globalization;
 using NodaTime.Properties;
 using NodaTime.Text.Patterns;
 using NodaTime.Utility;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace NodaTime.Text
 {
@@ -125,7 +125,7 @@ namespace NodaTime.Text
         /// Provides a container for the interim parsed pieces of an <see cref="Offset" /> value.
         /// </summary>
         [DebuggerStepThrough]
-        internal sealed class DurationParseBucket : ParseBucket<Duration>
+        private sealed class DurationParseBucket : ParseBucket<Duration>
         {
             // This is the negated number of "positive" ticks, so that we can cope with long.MinValue ticks
             // in the original duration. This value will always be negative (or 0).
@@ -135,7 +135,7 @@ namespace NodaTime.Text
             /// <summary>
             /// Calculates the value from the parsed pieces.
             /// </summary>
-            internal override ParseResult<Duration> CalculateValue(PatternFields usedFields)
+            internal override ParseResult<Duration> CalculateValue(PatternFields usedFields, string text)
             {
                 return ParseResult<Duration>.ForValue(Duration.FromTicks(IsNegative ? NegativeTicks : -NegativeTicks));
             }

@@ -2,10 +2,10 @@
 // Use of this source code is governed by the Apache License 2.0,
 // as found in the LICENSE.txt file.
 
-using NodaTime.TimeZones.IO;
-using NodaTime.Utility;
 using System;
 using System.Diagnostics.CodeAnalysis;
+using NodaTime.TimeZones.IO;
+using NodaTime.Utility;
 
 namespace NodaTime.TimeZones
 {
@@ -135,28 +135,10 @@ namespace NodaTime.TimeZones
             }
         }
 
-
         /// <summary>
         /// Gets the method by which offsets are added to Instants to get LocalInstants.
         /// </summary>
         public TransitionMode Mode { get { return mode; } }
-
-        /// <summary>
-        /// Gets the month of year the rule starts.
-        /// </summary>
-        public int MonthOfYear { get { return monthOfYear; } }
-
-        /// <summary>
-        /// Gets the day of month this rule starts; negative values count from the end of the month, so -1 means "last
-        /// day of the month".
-        /// </summary>
-        public int DayOfMonth { get { return dayOfMonth; } }
-
-        /// <summary>
-        /// Gets the day of week this rule starts.
-        /// </summary>
-        /// <value>The integer day of week (1=Mon, 2=Tue, etc.). 0 means not set.</value>
-        public int DayOfWeek { get { return dayOfWeek; } }
 
         /// <summary>
         /// Gets a value indicating whether [advance day of week].
@@ -167,11 +149,6 @@ namespace NodaTime.TimeZones
         /// Gets the time of day when the rule takes effect.
         /// </summary>
         public LocalTime TimeOfDay { get { return timeOfDay; } }
-
-        /// <summary>
-        /// Determines whether or not to add an extra day, for "24:00" offsets.
-        /// </summary>
-        public bool AddDay { get { return addDay; } }
 
         #region IEquatable<ZoneYearOffset> Members
 
@@ -333,33 +310,15 @@ namespace NodaTime.TimeZones
             // - DDD is the day of week (0-7)
             // - A is the AdvanceDayOfWeek
             // - P is the "addDay" (24:00) flag
-            int flags = ((int) Mode << 5) |
-                        (DayOfWeek << 2) |
-                        (AdvanceDayOfWeek ? 2 : 0) |
+            int flags = ((int) mode << 5) |
+                        (dayOfWeek << 2) |
+                        (advance ? 2 : 0) |
                         (addDay ? 1 : 0);
             writer.WriteByte((byte) flags);
-            writer.WriteCount(MonthOfYear);
-            writer.WriteSignedCount(DayOfMonth);
+            writer.WriteCount(monthOfYear);
+            writer.WriteSignedCount(dayOfMonth);
             // The time of day is written as an offset for historical reasons.
             writer.WriteOffset(Offset.FromTicks(timeOfDay.LocalDateTime.LocalInstant.Ticks));
-        }
-
-        /// <summary>
-        /// Writes this object to the given <see cref="LegacyDateTimeZoneWriter"/>.
-        /// </summary>
-        /// <param name="writer">Where to send the output.</param>
-        internal void WriteLegacy(LegacyDateTimeZoneWriter writer)
-        {
-            writer.WriteCount((int) Mode);
-            // Day of month can range from -31 to 31, so we add a suitable amount to force it to be positive.
-            // The other values cannot, but we offset them for legacy reasons.
-            writer.WriteCount(MonthOfYear + 12);
-            writer.WriteCount(DayOfMonth + 31);
-            writer.WriteCount(DayOfWeek + 7);
-            writer.WriteBoolean(AdvanceDayOfWeek);
-            // The time of day is written as an offset for historical reasons.
-            writer.WriteOffset(Offset.FromTicks(timeOfDay.LocalDateTime.LocalInstant.Ticks));
-            writer.WriteBoolean(addDay);
         }
 
         public static ZoneYearOffset Read(IDateTimeZoneReader reader)
@@ -375,23 +334,7 @@ namespace NodaTime.TimeZones
             // The time of day is written as an offset for historical reasons.
             var ticksOfDay = reader.ReadOffset();
             return new ZoneYearOffset(mode, monthOfYear, dayOfMonth, dayOfWeek, advance, 
-                new LocalTime(new LocalInstant(ticksOfDay.Ticks)), addDay);
-        }
-
-        public static ZoneYearOffset ReadLegacy(LegacyDateTimeZoneReader reader)
-        {
-            Preconditions.CheckNotNull(reader, "reader");
-            var mode = (TransitionMode) reader.ReadCount();
-            // Remove the additions performed before
-            int monthOfYear = reader.ReadCount() - 12;
-            int dayOfMonth = reader.ReadCount() - 31;
-            int dayOfWeek = reader.ReadCount() - 7;
-            bool advance = reader.ReadBoolean();
-            // The time of day is written as an offset for historical reasons.
-            var ticksOfDay = reader.ReadOffset();
-            var addDay = reader.ReadBoolean();
-            return new ZoneYearOffset(mode, monthOfYear, dayOfMonth, dayOfWeek, advance,
-                new LocalTime(new LocalInstant(ticksOfDay.Ticks)), addDay);
+                new LocalTime(ticksOfDay.Ticks), addDay);
         }
 
         /// <summary>
