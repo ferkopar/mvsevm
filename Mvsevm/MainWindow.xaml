@@ -1,0 +1,87 @@
+﻿<RibbonWindow x:Class="Mvsevm.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mvsevm="clr-namespace:Mvsevm"
+        Title="MainWindow" Icon="Image\Museum.ico" Height="350" Width="525">
+    <Window.CommandBindings>
+      <!--  <CommandBinding Command="Close" Executed="OnClose" /> -->
+        <CommandBinding Command="mvsevm:MvsevmCommands.CreateUser" Executed="OnCreateUser" />
+        <CommandBinding Command="mvsevm:MvsevmCommands.EditDmSuperType" Executed="OnEditDmSuperType" />
+    </Window.CommandBindings>
+    <DockPanel Name="MainContent">
+        <Ribbon DockPanel.Dock="Top">
+            <Ribbon.QuickAccessToolBar>
+                <RibbonQuickAccessToolBar>
+                    <RibbonButton SmallImageSource=" C:\Work\Mvsevm\Mvsevm\Mvsevm\Image\3(three)rows_9713_32.bmp"/>
+                    <RibbonButton SmallImageSource=" C:\Work\Mvsevm\Mvsevm\Mvsevm\Image\SubSystem_13486_32.bmp "/>
+                </RibbonQuickAccessToolBar>
+            </Ribbon.QuickAccessToolBar>
+            <Ribbon.ApplicationMenu>
+                <RibbonApplicationMenu SmallImageSource="Image\SubSystem_13486_32.bmp" >
+                    <RibbonApplicationMenuItem Header="Show _Book" />
+                    <RibbonSeparator />
+                    <RibbonApplicationMenuItem Header="Exit" Command="Close" />
+                </RibbonApplicationMenu>
+            </Ribbon.ApplicationMenu>
+            <RibbonTab Header="Home">
+                <RibbonGroup Header="Clipboard">
+                    <RibbonButton Command="Paste" Label="Paste" LargeImageSource="Image\SubSystem_13486_32.bmp" />
+                    <RibbonButton Command="Cut" SmallImageSource="Image\SubSystem_13486_32.bmp" />
+                    <RibbonButton Command="Copy" SmallImageSource="Image\SubSystem_13486_32.bmp" />
+                    <RibbonButton Command="Undo" LargeImageSource="Image\SubSystem_13486_32.bmp" />
+                </RibbonGroup>
+                <RibbonGroup Header="Show">
+                    <RibbonButton LargeImageSource="Image\SubSystem_13486_32.bmp" Label="Book" />
+                    <RibbonButton LargeImageSource="Image\SubSystem_13486_32.bmp" Label="Book List" />
+                    <RibbonButton LargeImageSource="Image\SubSystem_13486_32.bmp" Label="Book Grid" />
+                </RibbonGroup>
+            </RibbonTab>
+            <RibbonTab Header="Ribbon Controls">
+                <RibbonGroup Header="Sample">
+                    <RibbonButton Label="Button" />
+                    <RibbonCheckBox Label="Checkbox" />
+                    <RibbonComboBox Label="Combo1">
+                        <Label>One</Label>
+                        <Label>Two</Label>
+                    </RibbonComboBox>
+                    <RibbonTextBox>Text Box</RibbonTextBox>
+                    <RibbonSplitButton Label="Split Button">
+                        <RibbonMenuItem Header="One" />
+                        <RibbonMenuItem Header="Two" />
+                    </RibbonSplitButton>
+                    <RibbonComboBox Label="Combo2" IsEditable="False">
+                        <RibbonGallery SelectedValuePath="Content" MaxColumnCount="1" SelectedValue="Green">
+                            <RibbonGalleryCategory>
+                                <RibbonGalleryItem Content="Red" Foreground="Red" />
+                                <RibbonGalleryItem Content="Green" Foreground="Green" />
+                                <RibbonGalleryItem Content="Blue" Foreground="Blue" />
+                            </RibbonGalleryCategory>
+                        </RibbonGallery>
+                    </RibbonComboBox>
+                </RibbonGroup>
+            </RibbonTab>
+            <RibbonTab Header="Tárgyszólisták">
+                <RibbonGroup Header="Intézményi tárgyszólisták">
+                    <RibbonButton SmallImageSource="Image\SubSystem_13486_32.bmp" Label="Személyek" />
+                    <RibbonButton SmallImageSource="Image\SubSystem_13486_32.bmp" Label="Helyek" />
+                    <RibbonButton SmallImageSource="Image\SubSystem_13486_32.bmp" Label="Anyagok" />
+                </RibbonGroup>>
+            </RibbonTab>
+            <RibbonTab Header="Rendszergazda eszközei">
+                <RibbonGroup Header="Felhasználók">
+                    <RibbonButton Command="mvsevm:MvsevmCommands.CreateUser" Label="Felhasználó" LargeImageSource="Image\SubSystem_13486_32.bmp" />
+                    <RibbonButton Command="Cut" SmallImageSource="Image\SubSystem_13486_32.bmp" />
+                    <RibbonButton Command="Copy" SmallImageSource="Image\SubSystem_13486_32.bmp" />
+                    <RibbonButton Command="Undo" LargeImageSource="Image\SubSystem_13486_32.bmp" />
+                </RibbonGroup>
+                <RibbonGroup Header="Típusok">
+                    <RibbonButton Command="mvsevm:MvsevmCommands.EditDmSuperType" LargeImageSource="Image\SubSystem_13486_32.bmp" />
+
+                </RibbonGroup>
+            </RibbonTab>
+        </Ribbon>
+        
+    </DockPanel>
+    
+         
+</RibbonWindow>

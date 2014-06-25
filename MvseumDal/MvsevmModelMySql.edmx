@@ -1,0 +1,543 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="3.0" xmlns:edmx="http://schemas.microsoft.com/ado/2009/11/edmx">
+  <!-- EF Runtime content -->
+  <edmx:Runtime>
+    <!-- SSDL content -->
+    <edmx:StorageModels>
+    <Schema Namespace="MvsevmModel.Store" Provider="MySql.Data.MySqlClient" ProviderManifestToken="5.6" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+        <EntityType Name="base">
+          <Key>
+            <PropertyRef Name="BASE_ID" />
+          </Key>
+          <Property Name="BASE_ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="FROM_DATE" Type="datetime" Precision="0" />
+          <Property Name="TO_DATE" Type="datetime" Precision="0" />
+          <Property Name="DESCRIPTION" Type="varchar" MaxLength="255" />
+          <Property Name="USE_COMMENT" Type="varchar" MaxLength="255" />
+          <Property Name="CRU" Type="varchar" MaxLength="30" />
+          <Property Name="CRD" Type="timestamp" Precision="0" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="MDU" Type="varchar" MaxLength="30" />
+          <Property Name="MDD" Type="timestamp" Precision="0" Nullable="false" />
+        </EntityType>
+        <EntityType Name="dm_super_type">
+          <Key>
+            <PropertyRef Name="SUPER_TYPE_ID" />
+          </Key>
+          <Property Name="SUPER_TYPE_ID" Type="int" Nullable="false" />
+          <Property Name="BASE_ID" Type="int" />
+          <Property Name="GROUP_ID" Type="int" />
+          <Property Name="SUPER_TYPE_NAME" Type="varchar" MaxLength="255" />
+          <Property Name="SUPER_TYPE_SHORT_NAME" Type="varchar" MaxLength="50" />
+          <Property Name="SOPTIONAL" Type="varchar" MaxLength="1" />
+        </EntityType>
+        <EntityType Name="inventory">
+          <Key>
+            <PropertyRef Name="InventoryID" />
+          </Key>
+          <Property Name="InventoryID" Type="int" Nullable="false" />
+          <Property Name="BASE_ID" Type="int" />
+        </EntityType>
+        <EntityType Name="inventoryno">
+          <Key>
+            <PropertyRef Name="InventoryNoId" />
+          </Key>
+          <Property Name="InventoryNoId" Type="int" Nullable="false" />
+          <Property Name="BASE_ID" Type="int" />
+          <Property Name="Year" Type="int" />
+          <Property Name="Tetel" Type="int" />
+          <Property Name="Sor" Type="int" />
+          <Property Name="Al" Type="int" />
+          <Property Name="Ryear" Type="int" />
+          <Property Name="RInventoryNo" Type="varchar" MaxLength="1024" />
+        </EntityType>
+        <EntityType Name="inventoryparam">
+          <Key>
+            <PropertyRef Name="InventoryParamID" />
+          </Key>
+          <Property Name="InventoryParamID" Type="int" Nullable="false" />
+          <Property Name="InventoryID" Type="int" />
+          <Property Name="SUPER_TYPE_ID" Type="int" />
+          <Property Name="PARAM_VALUE_ID" Type="int" />
+          <Property Name="PARAM_VALUE" Type="varchar" MaxLength="1200" />
+        </EntityType>
+        <EntityType Name="iventoryparamrule">
+          <Key>
+            <PropertyRef Name="IventoryParamRuleId" />
+          </Key>
+          <Property Name="IventoryParamRuleId" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="BASE_ID" Type="int" />
+          <Property Name="CollectionId" Type="int" />
+          <Property Name="ParamId" Type="int" />
+          <Property Name="ParamTypeId" Type="int" />
+          <Property Name="OrderNo" Type="int" />
+          <Property Name="OrderSign" Type="int" />
+        </EntityType>
+        <EntityType Name="subject">
+          <Key>
+            <PropertyRef Name="SubjectID" />
+          </Key>
+          <Property Name="SubjectID" Type="int" Nullable="false" />
+          <Property Name="BASE_ID" Type="int" />
+          <Property Name="SUPER_TYPE_ID" Type="int" />
+          <Property Name="Name" Type="longtext" />
+        </EntityType>
+        <EntityType Name="subjectparam">
+          <Key>
+            <PropertyRef Name="SubjectParamIId" />
+          </Key>
+          <Property Name="SubjectParamIId" Type="int" Nullable="false" />
+          <Property Name="SubjectID" Type="int" />
+          <Property Name="SUPER_TYPE_ID" Type="int" />
+          <Property Name="BASE_ID" Type="int" />
+        </EntityType>
+        <EntityType Name="subjectparamrule">
+          <Key>
+            <PropertyRef Name="SubjectParamRuleId" />
+          </Key>
+          <Property Name="SubjectParamRuleId" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="BASE_ID" Type="int" />
+          <Property Name="ParamId" Type="int" />
+          <Property Name="ParamTypeId" Type="int" />
+          <Property Name="OrderNo" Type="int" />
+          <Property Name="OrderSign" Type="int" />
+        </EntityType>
+        <EntityType Name="tezaurusz">
+          <Key>
+            <PropertyRef Name="Tezaurusz" />
+          </Key>
+          <Property Name="Tezaurusz" Type="int" Nullable="false" />
+          <Property Name="SUPER_TYPE_ID" Type="int" />
+          <Property Name="BASE_ID" Type="int" />
+          <Property Name="Tragyszo" Type="varchar" MaxLength="1024" />
+          <Property Name="Magyarazat" Type="varchar" MaxLength="1024" />
+        </EntityType>
+        <EntityType Name="tezauruszrel">
+          <Key>
+            <PropertyRef Name="TezauruszRelId" />
+          </Key>
+          <Property Name="TezauruszRelId" Type="int" Nullable="false" />
+          <Property Name="SUPER_TYPE_ID" Type="int" />
+          <Property Name="REL_LEFT" Type="int" />
+          <Property Name="REL_RIGHT" Type="int" />
+          <Property Name="BASE_ID" Type="int" />
+        </EntityType>
+        <!--Errors Found During Generation:
+warning 6002: The table/view 'def.mvsevm.v_dm_super_type' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.-->
+        <EntityType Name="v_dm_super_type">
+          <Key>
+            <PropertyRef Name="SUPER_TYPE_ID" />
+            <PropertyRef Name="CRD" />
+            <PropertyRef Name="MDD" />
+          </Key>
+          <Property Name="SUPER_TYPE_ID" Type="int" Nullable="false" />
+          <Property Name="BASE_ID" Type="int" />
+          <Property Name="GROUP_ID" Type="int" />
+          <Property Name="SUPER_TYPE_NAME" Type="varchar" MaxLength="255" />
+          <Property Name="SUPER_TYPE_SHORT_NAME" Type="varchar" MaxLength="50" />
+          <Property Name="SOPTIONAL" Type="varchar" MaxLength="1" />
+          <Property Name="FROM_DATE" Type="datetime" Precision="0" />
+          <Property Name="TO_DATE" Type="datetime" Precision="0" />
+          <Property Name="DESCRIPTION" Type="varchar" MaxLength="255" />
+          <Property Name="USE_COMMENT" Type="varchar" MaxLength="255" />
+          <Property Name="CRU" Type="varchar" MaxLength="30" />
+          <Property Name="CRD" Type="timestamp" Precision="0" Nullable="false" />
+          <Property Name="MDU" Type="varchar" MaxLength="30" />
+          <Property Name="MDD" Type="timestamp" Precision="0" Nullable="false" />
+        </EntityType>
+        <Association Name="FK_SELF">
+          <End Role="dm_super_type" Type="Self.dm_super_type" Multiplicity="0..1" />
+          <End Role="dm_super_type1" Type="Self.dm_super_type" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="dm_super_type">
+              <PropertyRef Name="SUPER_TYPE_ID" />
+            </Principal>
+            <Dependent Role="dm_super_type1">
+              <PropertyRef Name="GROUP_ID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <EntityContainer Name="MvsevmModelStoreContainer">
+          <EntitySet Name="base" EntityType="Self.base" Schema="mvsevm" store:Type="Tables" />
+          <EntitySet Name="dm_super_type" EntityType="Self.dm_super_type" Schema="mvsevm" store:Type="Tables" />
+          <EntitySet Name="inventory" EntityType="Self.inventory" Schema="mvsevm" store:Type="Tables" />
+          <EntitySet Name="inventoryno" EntityType="Self.inventoryno" Schema="mvsevm" store:Type="Tables" />
+          <EntitySet Name="inventoryparam" EntityType="Self.inventoryparam" Schema="mvsevm" store:Type="Tables" />
+          <EntitySet Name="iventoryparamrule" EntityType="Self.iventoryparamrule" Schema="mvsevm" store:Type="Tables" />
+          <EntitySet Name="subject" EntityType="Self.subject" Schema="mvsevm" store:Type="Tables" />
+          <EntitySet Name="subjectparam" EntityType="Self.subjectparam" Schema="mvsevm" store:Type="Tables" />
+          <EntitySet Name="subjectparamrule" EntityType="Self.subjectparamrule" Schema="mvsevm" store:Type="Tables" />
+          <EntitySet Name="tezaurusz" EntityType="Self.tezaurusz" Schema="mvsevm" store:Type="Tables" />
+          <EntitySet Name="tezauruszrel" EntityType="Self.tezauruszrel" Schema="mvsevm" store:Type="Tables" />
+          <EntitySet Name="v_dm_super_type" EntityType="Self.v_dm_super_type" store:Type="Views" store:Schema="mvsevm">
+            <DefiningQuery>SELECT
+`v_dm_super_type`.`SUPER_TYPE_ID`, 
+`v_dm_super_type`.`BASE_ID`, 
+`v_dm_super_type`.`GROUP_ID`, 
+`v_dm_super_type`.`SUPER_TYPE_NAME`, 
+`v_dm_super_type`.`SUPER_TYPE_SHORT_NAME`, 
+`v_dm_super_type`.`SOPTIONAL`, 
+`v_dm_super_type`.`FROM_DATE`, 
+`v_dm_super_type`.`TO_DATE`, 
+`v_dm_super_type`.`DESCRIPTION`, 
+`v_dm_super_type`.`USE_COMMENT`, 
+`v_dm_super_type`.`CRU`, 
+`v_dm_super_type`.`CRD`, 
+`v_dm_super_type`.`MDU`, 
+`v_dm_super_type`.`MDD`
+FROM `v_dm_super_type` AS `v_dm_super_type`</DefiningQuery>
+          </EntitySet>
+          <AssociationSet Name="FK_SELF" Association="Self.FK_SELF">
+            <End Role="dm_super_type" EntitySet="dm_super_type" />
+            <End Role="dm_super_type1" EntitySet="dm_super_type" />
+          </AssociationSet>
+        </EntityContainer>
+      </Schema></edmx:StorageModels>
+    <!-- CSDL content -->
+    <edmx:ConceptualModels>
+      <Schema Namespace="MvsevmModel" Alias="Self" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
+        <EntityType Name="base">
+          <Key>
+            <PropertyRef Name="BASE_ID" />
+          </Key>
+          <Property Name="BASE_ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="FROM_DATE" Type="DateTime" />
+          <Property Name="TO_DATE" Type="DateTime" />
+          <Property Name="DESCRIPTION" Type="String" MaxLength="255" FixedLength="false" Unicode="false" />
+          <Property Name="USE_COMMENT" Type="String" MaxLength="255" FixedLength="false" Unicode="false" />
+          <Property Name="CRU" Type="String" MaxLength="30" FixedLength="false" Unicode="false" />
+          <Property Name="CRD" Type="DateTime" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="MDU" Type="String" MaxLength="30" FixedLength="false" Unicode="false" />
+          <Property Name="MDD" Type="DateTime" Nullable="false" />
+        </EntityType>
+        <EntityType Name="dm_super_type">
+          <Key>
+            <PropertyRef Name="SUPER_TYPE_ID" />
+          </Key>
+          <Property Name="SUPER_TYPE_ID" Type="Int32" Nullable="false" />
+          <Property Name="BASE_ID" Type="Int32" />
+          <Property Name="GROUP_ID" Type="Int32" />
+          <Property Name="SUPER_TYPE_NAME" Type="String" MaxLength="255" FixedLength="false" Unicode="false" />
+          <Property Name="SUPER_TYPE_SHORT_NAME" Type="String" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Name="SOPTIONAL" Type="String" MaxLength="1" FixedLength="false" Unicode="false" />
+          <NavigationProperty Name="dm_super_type1" Relationship="MvsevmModel.FK_SELF" FromRole="dm_super_type" ToRole="dm_super_type1" />
+          <NavigationProperty Name="dm_super_type2" Relationship="MvsevmModel.FK_SELF" FromRole="dm_super_type1" ToRole="dm_super_type" />
+          </EntityType>
+        <EntityType Name="inventory">
+          <Key>
+            <PropertyRef Name="InventoryID" />
+          </Key>
+          <Property Name="InventoryID" Type="Int32" Nullable="false" />
+          <Property Name="BASE_ID" Type="Int32" />
+        </EntityType>
+        <EntityType Name="inventoryno">
+          <Key>
+            <PropertyRef Name="InventoryNoId" />
+          </Key>
+          <Property Name="InventoryNoId" Type="Int32" Nullable="false" />
+          <Property Name="BASE_ID" Type="Int32" />
+          <Property Name="Year" Type="Int32" />
+          <Property Name="Tetel" Type="Int32" />
+          <Property Name="Sor" Type="Int32" />
+          <Property Name="Al" Type="Int32" />
+          <Property Name="Ryear" Type="Int32" />
+          <Property Name="RInventoryNo" Type="String" MaxLength="1024" FixedLength="false" Unicode="false" />
+        </EntityType>
+        <EntityType Name="inventoryparam">
+          <Key>
+            <PropertyRef Name="InventoryParamID" />
+          </Key>
+          <Property Name="InventoryParamID" Type="Int32" Nullable="false" />
+          <Property Name="InventoryID" Type="Int32" />
+          <Property Name="SUPER_TYPE_ID" Type="Int32" />
+          <Property Name="PARAM_VALUE_ID" Type="Int32" />
+          <Property Name="PARAM_VALUE" Type="String" MaxLength="1200" FixedLength="false" Unicode="false" />
+        </EntityType>
+        <EntityType Name="iventoryparamrule">
+          <Key>
+            <PropertyRef Name="IventoryParamRuleId" />
+          </Key>
+          <Property Name="IventoryParamRuleId" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="BASE_ID" Type="Int32" />
+          <Property Name="CollectionId" Type="Int32" />
+          <Property Name="ParamId" Type="Int32" />
+          <Property Name="ParamTypeId" Type="Int32" />
+          <Property Name="OrderNo" Type="Int32" />
+          <Property Name="OrderSign" Type="Int32" />
+        </EntityType>
+        <EntityType Name="subject">
+          <Key>
+            <PropertyRef Name="SubjectID" />
+          </Key>
+          <Property Name="SubjectID" Type="Int32" Nullable="false" />
+          <Property Name="BASE_ID" Type="Int32" />
+          <Property Name="SUPER_TYPE_ID" Type="Int32" />
+          <Property Name="Name" Type="String" MaxLength="1073741823" FixedLength="false" Unicode="false" />
+        </EntityType>
+        <EntityType Name="subjectparam">
+          <Key>
+            <PropertyRef Name="SubjectParamIId" />
+          </Key>
+          <Property Name="SubjectParamIId" Type="Int32" Nullable="false" />
+          <Property Name="SubjectID" Type="Int32" />
+          <Property Name="SUPER_TYPE_ID" Type="Int32" />
+          <Property Name="BASE_ID" Type="Int32" />
+        </EntityType>
+        <EntityType Name="subjectparamrule">
+          <Key>
+            <PropertyRef Name="SubjectParamRuleId" />
+          </Key>
+          <Property Name="SubjectParamRuleId" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="BASE_ID" Type="Int32" />
+          <Property Name="ParamId" Type="Int32" />
+          <Property Name="ParamTypeId" Type="Int32" />
+          <Property Name="OrderNo" Type="Int32" />
+          <Property Name="OrderSign" Type="Int32" />
+        </EntityType>
+        <EntityType Name="tezaurusz">
+          <Key>
+            <PropertyRef Name="Tezaurusz1" />
+          </Key>
+          <Property Name="Tezaurusz1" Type="Int32" Nullable="false" />
+          <Property Name="SUPER_TYPE_ID" Type="Int32" />
+          <Property Name="BASE_ID" Type="Int32" />
+          <Property Name="Tragyszo" Type="String" MaxLength="1024" FixedLength="false" Unicode="false" />
+          <Property Name="Magyarazat" Type="String" MaxLength="1024" FixedLength="false" Unicode="false" />
+        </EntityType>
+        <EntityType Name="tezauruszrel">
+          <Key>
+            <PropertyRef Name="TezauruszRelId" />
+          </Key>
+          <Property Name="TezauruszRelId" Type="Int32" Nullable="false" />
+          <Property Name="SUPER_TYPE_ID" Type="Int32" />
+          <Property Name="REL_LEFT" Type="Int32" />
+          <Property Name="REL_RIGHT" Type="Int32" />
+          <Property Name="BASE_ID" Type="Int32" />
+        </EntityType>
+        <EntityType Name="v_dm_super_type">
+          <Key>
+            <PropertyRef Name="SUPER_TYPE_ID" />
+            <PropertyRef Name="CRD" />
+            <PropertyRef Name="MDD" />
+          </Key>
+          <Property Name="SUPER_TYPE_ID" Type="Int32" Nullable="false" />
+          <Property Name="BASE_ID" Type="Int32" />
+          <Property Name="GROUP_ID" Type="Int32" />
+          <Property Name="SUPER_TYPE_NAME" Type="String" MaxLength="255" FixedLength="false" Unicode="false" />
+          <Property Name="SUPER_TYPE_SHORT_NAME" Type="String" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Name="SOPTIONAL" Type="String" MaxLength="1" FixedLength="false" Unicode="false" />
+          <Property Name="FROM_DATE" Type="DateTime" />
+          <Property Name="TO_DATE" Type="DateTime" />
+          <Property Name="DESCRIPTION" Type="String" MaxLength="255" FixedLength="false" Unicode="false" />
+          <Property Name="USE_COMMENT" Type="String" MaxLength="255" FixedLength="false" Unicode="false" />
+          <Property Name="CRU" Type="String" MaxLength="30" FixedLength="false" Unicode="false" />
+          <Property Name="CRD" Type="DateTime" Nullable="false" />
+          <Property Name="MDU" Type="String" MaxLength="30" FixedLength="false" Unicode="false" />
+          <Property Name="MDD" Type="DateTime" Nullable="false" />
+        </EntityType>
+        <EntityContainer Name="MvsevmMySqlEntities" annotation:LazyLoadingEnabled="true">
+          <EntitySet Name="base" EntityType="Self.base" />
+          <EntitySet Name="dm_super_type" EntityType="Self.dm_super_type" />
+          <EntitySet Name="inventory" EntityType="Self.inventory" />
+          <EntitySet Name="inventoryno" EntityType="Self.inventoryno" />
+          <EntitySet Name="inventoryparam" EntityType="Self.inventoryparam" />
+          <EntitySet Name="iventoryparamrule" EntityType="Self.iventoryparamrule" />
+          <EntitySet Name="subject" EntityType="Self.subject" />
+          <EntitySet Name="subjectparam" EntityType="Self.subjectparam" />
+          <EntitySet Name="subjectparamrule" EntityType="Self.subjectparamrule" />
+          <EntitySet Name="tezaurusz" EntityType="Self.tezaurusz" />
+          <EntitySet Name="tezauruszrel" EntityType="Self.tezauruszrel" />
+          <EntitySet Name="v_dm_super_type" EntityType="Self.v_dm_super_type" />
+          <AssociationSet Name="FK_SELF" Association="MvsevmModel.FK_SELF">
+            <End Role="dm_super_type" EntitySet="dm_super_type" />
+            <End Role="dm_super_type1" EntitySet="dm_super_type" />
+          </AssociationSet>
+        </EntityContainer>
+        <Association Name="FK_SELF">
+          <End Type="MvsevmModel.dm_super_type" Role="dm_super_type" Multiplicity="0..1" />
+          <End Type="MvsevmModel.dm_super_type" Role="dm_super_type1" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="dm_super_type">
+              <PropertyRef Name="SUPER_TYPE_ID" />
+            </Principal>
+            <Dependent Role="dm_super_type1">
+              <PropertyRef Name="GROUP_ID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+      </Schema>
+    </edmx:ConceptualModels>
+    <!-- C-S mapping content -->
+    <edmx:Mappings>
+      <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2009/11/mapping/cs">
+        <EntityContainerMapping StorageEntityContainer="MvsevmModelStoreContainer" CdmEntityContainer="MvsevmMySqlEntities">
+          <EntitySetMapping Name="base">
+            <EntityTypeMapping TypeName="MvsevmModel.base">
+              <MappingFragment StoreEntitySet="base">
+                <ScalarProperty Name="BASE_ID" ColumnName="BASE_ID" />
+                <ScalarProperty Name="FROM_DATE" ColumnName="FROM_DATE" />
+                <ScalarProperty Name="TO_DATE" ColumnName="TO_DATE" />
+                <ScalarProperty Name="DESCRIPTION" ColumnName="DESCRIPTION" />
+                <ScalarProperty Name="USE_COMMENT" ColumnName="USE_COMMENT" />
+                <ScalarProperty Name="CRU" ColumnName="CRU" />
+                <ScalarProperty Name="CRD" ColumnName="CRD" />
+                <ScalarProperty Name="MDU" ColumnName="MDU" />
+                <ScalarProperty Name="MDD" ColumnName="MDD" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="dm_super_type">
+            <EntityTypeMapping TypeName="MvsevmModel.dm_super_type">
+              <MappingFragment StoreEntitySet="dm_super_type">
+                <ScalarProperty Name="SUPER_TYPE_ID" ColumnName="SUPER_TYPE_ID" />
+                <ScalarProperty Name="BASE_ID" ColumnName="BASE_ID" />
+                <ScalarProperty Name="GROUP_ID" ColumnName="GROUP_ID" />
+                <ScalarProperty Name="SUPER_TYPE_NAME" ColumnName="SUPER_TYPE_NAME" />
+                <ScalarProperty Name="SUPER_TYPE_SHORT_NAME" ColumnName="SUPER_TYPE_SHORT_NAME" />
+                <ScalarProperty Name="SOPTIONAL" ColumnName="SOPTIONAL" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="inventory">
+            <EntityTypeMapping TypeName="MvsevmModel.inventory">
+              <MappingFragment StoreEntitySet="inventory">
+                <ScalarProperty Name="InventoryID" ColumnName="InventoryID" />
+                <ScalarProperty Name="BASE_ID" ColumnName="BASE_ID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="inventoryno">
+            <EntityTypeMapping TypeName="MvsevmModel.inventoryno">
+              <MappingFragment StoreEntitySet="inventoryno">
+                <ScalarProperty Name="InventoryNoId" ColumnName="InventoryNoId" />
+                <ScalarProperty Name="BASE_ID" ColumnName="BASE_ID" />
+                <ScalarProperty Name="Year" ColumnName="Year" />
+                <ScalarProperty Name="Tetel" ColumnName="Tetel" />
+                <ScalarProperty Name="Sor" ColumnName="Sor" />
+                <ScalarProperty Name="Al" ColumnName="Al" />
+                <ScalarProperty Name="Ryear" ColumnName="Ryear" />
+                <ScalarProperty Name="RInventoryNo" ColumnName="RInventoryNo" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="inventoryparam">
+            <EntityTypeMapping TypeName="MvsevmModel.inventoryparam">
+              <MappingFragment StoreEntitySet="inventoryparam">
+                <ScalarProperty Name="InventoryParamID" ColumnName="InventoryParamID" />
+                <ScalarProperty Name="InventoryID" ColumnName="InventoryID" />
+                <ScalarProperty Name="SUPER_TYPE_ID" ColumnName="SUPER_TYPE_ID" />
+                <ScalarProperty Name="PARAM_VALUE_ID" ColumnName="PARAM_VALUE_ID" />
+                <ScalarProperty Name="PARAM_VALUE" ColumnName="PARAM_VALUE" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="iventoryparamrule">
+            <EntityTypeMapping TypeName="MvsevmModel.iventoryparamrule">
+              <MappingFragment StoreEntitySet="iventoryparamrule">
+                <ScalarProperty Name="IventoryParamRuleId" ColumnName="IventoryParamRuleId" />
+                <ScalarProperty Name="BASE_ID" ColumnName="BASE_ID" />
+                <ScalarProperty Name="CollectionId" ColumnName="CollectionId" />
+                <ScalarProperty Name="ParamId" ColumnName="ParamId" />
+                <ScalarProperty Name="ParamTypeId" ColumnName="ParamTypeId" />
+                <ScalarProperty Name="OrderNo" ColumnName="OrderNo" />
+                <ScalarProperty Name="OrderSign" ColumnName="OrderSign" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="subject">
+            <EntityTypeMapping TypeName="MvsevmModel.subject">
+              <MappingFragment StoreEntitySet="subject">
+                <ScalarProperty Name="SubjectID" ColumnName="SubjectID" />
+                <ScalarProperty Name="BASE_ID" ColumnName="BASE_ID" />
+                <ScalarProperty Name="SUPER_TYPE_ID" ColumnName="SUPER_TYPE_ID" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="subjectparam">
+            <EntityTypeMapping TypeName="MvsevmModel.subjectparam">
+              <MappingFragment StoreEntitySet="subjectparam">
+                <ScalarProperty Name="SubjectParamIId" ColumnName="SubjectParamIId" />
+                <ScalarProperty Name="SubjectID" ColumnName="SubjectID" />
+                <ScalarProperty Name="SUPER_TYPE_ID" ColumnName="SUPER_TYPE_ID" />
+                <ScalarProperty Name="BASE_ID" ColumnName="BASE_ID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="subjectparamrule">
+            <EntityTypeMapping TypeName="MvsevmModel.subjectparamrule">
+              <MappingFragment StoreEntitySet="subjectparamrule">
+                <ScalarProperty Name="SubjectParamRuleId" ColumnName="SubjectParamRuleId" />
+                <ScalarProperty Name="BASE_ID" ColumnName="BASE_ID" />
+                <ScalarProperty Name="ParamId" ColumnName="ParamId" />
+                <ScalarProperty Name="ParamTypeId" ColumnName="ParamTypeId" />
+                <ScalarProperty Name="OrderNo" ColumnName="OrderNo" />
+                <ScalarProperty Name="OrderSign" ColumnName="OrderSign" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="tezaurusz">
+            <EntityTypeMapping TypeName="MvsevmModel.tezaurusz">
+              <MappingFragment StoreEntitySet="tezaurusz">
+                <ScalarProperty Name="Tezaurusz1" ColumnName="Tezaurusz" />
+                <ScalarProperty Name="SUPER_TYPE_ID" ColumnName="SUPER_TYPE_ID" />
+                <ScalarProperty Name="BASE_ID" ColumnName="BASE_ID" />
+                <ScalarProperty Name="Tragyszo" ColumnName="Tragyszo" />
+                <ScalarProperty Name="Magyarazat" ColumnName="Magyarazat" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="tezauruszrel">
+            <EntityTypeMapping TypeName="MvsevmModel.tezauruszrel">
+              <MappingFragment StoreEntitySet="tezauruszrel">
+                <ScalarProperty Name="TezauruszRelId" ColumnName="TezauruszRelId" />
+                <ScalarProperty Name="SUPER_TYPE_ID" ColumnName="SUPER_TYPE_ID" />
+                <ScalarProperty Name="REL_LEFT" ColumnName="REL_LEFT" />
+                <ScalarProperty Name="REL_RIGHT" ColumnName="REL_RIGHT" />
+                <ScalarProperty Name="BASE_ID" ColumnName="BASE_ID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="v_dm_super_type">
+            <EntityTypeMapping TypeName="MvsevmModel.v_dm_super_type">
+              <MappingFragment StoreEntitySet="v_dm_super_type">
+                <ScalarProperty Name="SUPER_TYPE_ID" ColumnName="SUPER_TYPE_ID" />
+                <ScalarProperty Name="BASE_ID" ColumnName="BASE_ID" />
+                <ScalarProperty Name="GROUP_ID" ColumnName="GROUP_ID" />
+                <ScalarProperty Name="SUPER_TYPE_NAME" ColumnName="SUPER_TYPE_NAME" />
+                <ScalarProperty Name="SUPER_TYPE_SHORT_NAME" ColumnName="SUPER_TYPE_SHORT_NAME" />
+                <ScalarProperty Name="SOPTIONAL" ColumnName="SOPTIONAL" />
+                <ScalarProperty Name="FROM_DATE" ColumnName="FROM_DATE" />
+                <ScalarProperty Name="TO_DATE" ColumnName="TO_DATE" />
+                <ScalarProperty Name="DESCRIPTION" ColumnName="DESCRIPTION" />
+                <ScalarProperty Name="USE_COMMENT" ColumnName="USE_COMMENT" />
+                <ScalarProperty Name="CRU" ColumnName="CRU" />
+                <ScalarProperty Name="CRD" ColumnName="CRD" />
+                <ScalarProperty Name="MDU" ColumnName="MDU" />
+                <ScalarProperty Name="MDD" ColumnName="MDD" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+        </EntityContainerMapping>
+      </Mapping>
+    </edmx:Mappings>
+  </edmx:Runtime>
+  <!-- EF Designer content (DO NOT EDIT MANUALLY BELOW HERE) -->
+  <Designer xmlns="http://schemas.microsoft.com/ado/2009/11/edmx">
+    <Connection>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="MetadataArtifactProcessing" Value="EmbedInOutputAssembly" />
+      </DesignerInfoPropertySet>
+    </Connection>
+    <Options>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="ValidateOnBuild" Value="true" />
+        <DesignerProperty Name="EnablePluralization" Value="false" />
+        <DesignerProperty Name="IncludeForeignKeysInModel" Value="true" />
+        <DesignerProperty Name="UseLegacyProvider" Value="true" />
+        <DesignerProperty Name="CodeGenerationStrategy" Value="None" />
+      </DesignerInfoPropertySet>
+    </Options>
+    <!-- Diagram content (shape and connector positions) -->
+    <Diagrams></Diagrams>
+  </Designer>
+</edmx:Edmx>
